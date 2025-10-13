@@ -352,17 +352,6 @@ class SBOMUIGenerator {
   <title>${this.title}</title>
   <meta name="color-scheme" content="light dark" />
     <script src="https://cdn.tailwindcss.com/3.4.0"></script>
-    <script>
-      // Suppress Tailwind CDN warning for production use
-      if (typeof window !== 'undefined' && window.tailwind) {
-        window.tailwind.config = {
-          ...window.tailwind.config,
-          corePlugins: {
-            preflight: false
-          }
-        };
-      }
-    </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <style>
     .card {
