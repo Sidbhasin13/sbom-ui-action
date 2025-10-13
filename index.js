@@ -8,10 +8,16 @@ const { glob } = require('glob');
 
 class SBOMUIGenerator {
   constructor() {
-    this.sbomFiles = core.getInput('sbom-files');
-    this.outputDir = core.getInput('output-dir');
-    this.title = core.getInput('title');
-    this.theme = core.getInput('theme');
+    this.sbomFiles = core.getInput('sbom-files') || process.env.INPUT_SBOM_FILES || '**/*.json';
+    this.outputDir = core.getInput('output-dir') || process.env.INPUT_OUTPUT_DIR || 'sbom-ui';
+    this.title = core.getInput('title') || process.env.INPUT_TITLE || 'SBOM Explorer';
+    this.theme = core.getInput('theme') || process.env.INPUT_THEME || 'dark';
+    
+    // Debug logging
+    core.info(`SBOM Files: ${this.sbomFiles}`);
+    core.info(`Output Dir: ${this.outputDir}`);
+    core.info(`Title: ${this.title}`);
+    core.info(`Theme: ${this.theme}`);
   }
 
   async run() {
@@ -52,6 +58,10 @@ class SBOMUIGenerator {
   }
 
   async createOutputDir() {
+    if (!this.outputDir) {
+      throw new Error('Output directory is not specified. Please provide output-dir input.');
+    }
+    
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir, { recursive: true });
     }
