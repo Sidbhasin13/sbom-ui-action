@@ -23,14 +23,14 @@ class SBOMUIGenerator {
   async run() {
     try {
       core.info('Starting SBOM UI Generation...');
-
+      
       // Create output directory
       await this.createOutputDir();
-
+      
       // Find and process SBOM files
       const sbomFiles = await this.findSBOMFiles();
       core.info(`Found ${sbomFiles.length} SBOM files`);
-
+      
       if (sbomFiles.length === 0) {
         core.warning('No SBOM files found. Creating example with sample data.');
         await this.createSampleData();
@@ -39,19 +39,19 @@ class SBOMUIGenerator {
         const parsedData = await this.parseSBOMFiles(sbomFiles);
         await this.writeParsedData(parsedData);
       }
-
+      
       // Generate HTML UI
       await this.generateHTML();
-
+      
       // Copy static assets
       await this.copyStaticAssets();
-
+      
       // Set output
       core.setOutput('output-path', this.outputDir);
       core.info(`SBOM UI generated in: ${this.outputDir}`);
 
       core.info('SBOM UI generation completed successfully!');
-
+      
     } catch (error) {
       core.setFailed(`Error: ${error.message}`);
     }
@@ -847,11 +847,11 @@ class SBOMUIGenerator {
 
         <div class="card xl:col-span-4">
           <div class="text-sm font-medium mb-3">Datasets in view</div>
-          <template x-if="Object.keys(perDatasetSev).length === 0">
+          <template x-if="Object.keys(perDatasetSevSafe).length === 0">
             <div class="muted">No datasets in the current view.</div>
           </template>
           <div class="space-y-3 max-h-60 overflow-auto">
-            <template x-for="(v, name) in perDatasetSev" :key="'ds-'+name">
+            <template x-for="(v, name) in perDatasetSevSafe" :key="'ds-'+name">
               <div>
                 <div class="flex items-center justify-between text-sm">
                   <div class="font-medium truncate" x-text="name"></div>
@@ -923,7 +923,7 @@ class SBOMUIGenerator {
             <div>
               <div class="text-sm font-medium mb-2">Severity mix</div>
               <div class="text-xs space-y-1">
-                <template x-for="seg in donutLegend" :key="'leg-'+seg.label">
+                <template x-for="seg in donutLegendSafe" :key="'leg-'+seg.label">
                   <div class="flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded" :style="\`background:\${seg.color}\`"></span>
                     <span class="text-[#94a3b8]" x-text="\`\${seg.label}: \${seg.count}\`"></span>
@@ -937,7 +937,7 @@ class SBOMUIGenerator {
           <div class="card h-full">
             <div class="text-sm font-medium mb-2">Top components by vulnerabilities</div>
             <div class="space-y-2">
-              <template x-for="row in topComponents" :key="'tc-'+row.name">
+              <template x-for="row in topComponentsSafe" :key="'tc-'+row.name">
                 <div class="flex items-center gap-3">
                   <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                   <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -990,7 +990,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Top licenses by vulnerabilities</div>
           <div class="space-y-2">
-            <template x-for="row in topLicenses" :key="'tl-'+row.name">
+            <template x-for="row in topLicensesSafe" :key="'tl-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1008,7 +1008,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Fix availability by dataset</div>
           <div class="space-y-2">
-            <template x-for="row in dsFixRates" :key="'dsfr-'+row.name">
+            <template x-for="row in dsFixRatesSafe" :key="'dsfr-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-32 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1136,6 +1136,9 @@ class SBOMUIGenerator {
         fixRateFiltered: 0,
         filterSummary: "",
         perDatasetSev: {},
+        get perDatasetSevSafe() {
+          return this.perDatasetSev && typeof this.perDatasetSev === 'object' ? this.perDatasetSev : {};
+        },
         sortKey: "severityRank",
         sortDir: "desc",
         page: 0,
@@ -1226,6 +1229,9 @@ class SBOMUIGenerator {
           UNKNOWN: { dash: '0 1000', offset: 0, color: '#d1d5db', count: 0 },
         },
         donutLegend: [],
+        get donutLegendSafe() {
+          return Array.isArray(this.donutLegend) ? this.donutLegend : [];
+        },
         buildSeverityDonut() {
           const order = this.sevBaseOrder;
           const counts = this.sevCountsFiltered || {};
@@ -1276,6 +1282,9 @@ class SBOMUIGenerator {
         },
 
         topComponents: [],
+        get topComponentsSafe() {
+          return Array.isArray(this.topComponents) ? this.topComponents : [];
+        },
         buildTopComponents() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1290,6 +1299,9 @@ class SBOMUIGenerator {
         },
 
         topLicenses: [],
+        get topLicensesSafe() {
+          return Array.isArray(this.topLicenses) ? this.topLicenses : [];
+        },
         buildTopLicenses() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1308,6 +1320,9 @@ class SBOMUIGenerator {
         },
 
         dsFixRates: [],
+        get dsFixRatesSafe() {
+          return Array.isArray(this.dsFixRates) ? this.dsFixRates : [];
+        },
         buildDsFixRates() {
           const map = {};
           if (!Array.isArray(this.filtered)) {
