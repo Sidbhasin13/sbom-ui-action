@@ -40,22 +40,16 @@ jobs:
           npm run build
           go build -o app ./cmd/main.go
       
-      - name: Generate comprehensive SBOM
+      - name: Collect existing SBOM files
         run: |
-          # Install SBOM generation tools
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          
           # Create release directory
           mkdir -p release-sboms
           
-          # Generate SBOM for different components
-          syft packages . -o cyclonedx-json > release-sboms/source-code.cyclonedx.json
-          syft packages dist/ -o cyclonedx-json > release-sboms/distribution.cyclonedx.json
-          syft packages . -o cyclonedx-json --file release-sboms/container-image.cyclonedx.json
-          
-          # Generate vulnerability report
-          trivy fs --format cyclonedx --output release-sboms/vulnerabilities.cyclonedx.json .
+          # Copy existing SBOM files from the repository
+          # This assumes you have SBOM files already generated and committed
+          find . -name "*.cyclonedx.json" -o -name "*.spdx.json" -o -name "*.bom.json" | while read file; do
+            cp "$file" release-sboms/
+          done
           
           # Add release metadata
           echo "{

@@ -1,5 +1,5 @@
 name: 'SBOM UI Generator'
-description: 'Generate an interactive SBOM vulnerability dashboard from various SBOM formats'
+description: 'Parse existing SBOM files and generate an interactive vulnerability dashboard'
 author: 'SBOM UI Team'
 branding:
   icon: 'shield'

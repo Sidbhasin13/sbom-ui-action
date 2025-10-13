@@ -1,6 +1,6 @@
 # SBOM UI Action
 
-A powerful GitHub Action that generates interactive Software Bill of Materials (SBOM) vulnerability dashboards. This action supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities.
+A powerful GitHub Action that parses existing Software Bill of Materials (SBOM) files and generates interactive vulnerability dashboards. This action supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities from your existing SBOM data.
 
 ## Features
 

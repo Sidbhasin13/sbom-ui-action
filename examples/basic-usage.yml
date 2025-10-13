@@ -11,15 +11,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Generate SBOM (example with Syft)
+      - name: Use existing SBOM files
         run: |
-          # Install Syft
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-          
-          # Generate SBOM
-          syft packages . -o cyclonedx-json > sbom.cyclonedx.json
+          # This example assumes you already have SBOM files in your repository
+          # The action will find and parse existing SBOM files
+          echo "Looking for existing SBOM files..."
+          find . -name "*.cyclonedx.json" -o -name "*.spdx.json" -o -name "*.bom.json" | head -10
       
       - name: Generate SBOM Dashboard
         uses: sidbhasin13/sbom-ui-action@v1
         with:
-          sbom-files: 'sbom.cyclonedx.json'
+          sbom-files: '**/*.cyclonedx.json,**/*.spdx.json'
+          output-dir: 'sbom-dashboard'
+          title: 'My Project SBOM Dashboard'

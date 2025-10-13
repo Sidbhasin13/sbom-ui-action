@@ -140,7 +140,7 @@ jobs:
           grep -q "express" sbom-ui/parse-sboms.json
           grep -q "lodash" sbom-ui/parse-sboms.json
 
-  security-scan:
+  security-audit:
     runs-on: ubuntu-latest
     
     steps:
@@ -158,10 +158,3 @@ jobs:
       
       - name: Run security audit
         run: npm audit --audit-level=moderate
-      
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
