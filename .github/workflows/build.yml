@@ -75,6 +75,18 @@ jobs:
           path: dist/
           retention-days: 7
 
+      - name: Commit built action
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -f dist/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: Auto-update built action [skip ci]"
+            git push
+          fi
+
   test-integration:
     runs-on: ubuntu-latest
     needs: build
