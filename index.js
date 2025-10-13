@@ -1370,7 +1370,7 @@ class SBOMUIGenerator {
               .map((d, i) => ({ 
                 ...d, 
                 _key: 'ds-' + (d.id || i),
-                id: d.id || `dataset-${i}`,
+                id: d.id || \`dataset-\${i}\`,
                 vulnerabilities: d.vulnerabilities || 0
               }))
               .sort((a, b) => String(a.id).localeCompare(String(b.id)));
