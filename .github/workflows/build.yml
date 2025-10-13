@@ -59,6 +59,12 @@ jobs:
             ]
           }' > test-sboms/test.cyclonedx.json
           
+          # Test the action with proper environment variables
+          export INPUT_SBOM_FILES="test-sboms/test.cyclonedx.json"
+          export INPUT_OUTPUT_DIR="test-output"
+          export INPUT_TITLE="Test SBOM Dashboard"
+          export INPUT_THEME="dark"
+          
           # Test the action
           node dist/index.js
       
@@ -126,6 +132,12 @@ jobs:
               }
             ]
           }' > sample-sboms/express.cyclonedx.json
+          
+          # Test the action with sample data and proper environment variables
+          export INPUT_SBOM_FILES="sample-sboms/express.cyclonedx.json"
+          export INPUT_OUTPUT_DIR="sbom-ui"
+          export INPUT_TITLE="Sample SBOM Dashboard"
+          export INPUT_THEME="dark"
           
           # Test the action with sample data
           node dist/index.js
