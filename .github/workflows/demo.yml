@@ -36,7 +36,8 @@ jobs:
       - name: Generate Demo UI with Sample Data
         run: |
           # Set environment variables for the action
-          export INPUT_SBOM_FILES=""
+          # Use a pattern that won't match any files to force sample data generation
+          export INPUT_SBOM_FILES="nonexistent-pattern-*.json"
           export INPUT_OUTPUT_DIR="demo"
           export INPUT_TITLE="SBOM UI Action - Live Demo"
           export INPUT_THEME="dark"
