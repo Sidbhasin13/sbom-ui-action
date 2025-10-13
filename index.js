@@ -716,7 +716,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in (datasets || [])" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -788,7 +788,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in (datasets || [])" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -1118,6 +1118,9 @@ class SBOMUIGenerator {
         filtered: [],
         paged: [],
         datasets: [],
+        get datasetsSafe() {
+          return Array.isArray(this.datasets) ? this.datasets.filter(d => d && d._key) : [];
+        },
         overall: { total: 0, severityCounts: {} },
         metrics: { fixAvailabilityRate: 0, topCVEs: [] },
         dataset: "",
@@ -1365,6 +1368,7 @@ class SBOMUIGenerator {
                 id: d.id || 'dataset-' + i,
                 vulnerabilities: d.vulnerabilities || 0
               }))
+              .filter(d => d && d._key) // Ensure all items have _key
               .sort((a, b) => String(a.id).localeCompare(String(b.id)));
             this.overall = snap.overall || this.overall;
             this.metrics = snap.metrics || this.metrics;
@@ -1377,6 +1381,11 @@ class SBOMUIGenerator {
             this.overall = { total: 0, severityCounts: {} };
             this.metrics = { fixAvailabilityRate: 0, topCVEs: [] };
             this.metaText = 'Failed to load data';
+            
+            // Force update to ensure Alpine.js sees the changes
+            this.$nextTick(() => {
+              this.applyFilters(true);
+            });
           }
 
           this.restoreFromHash();
