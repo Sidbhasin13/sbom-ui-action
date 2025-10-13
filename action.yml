@@ -1,0 +1,29 @@
+name: 'SBOM UI Generator'
+description: 'Generate an interactive SBOM vulnerability dashboard from various SBOM formats'
+author: 'SBOM UI Team'
+branding:
+  icon: 'shield'
+  color: 'blue'
+inputs:
+  sbom-files:
+    description: 'Path to SBOM files (supports CycloneDX JSON, SPDX JSON, and other formats)'
+    required: false
+    default: '**/*.json'
+  output-dir:
+    description: 'Directory to output the generated UI files'
+    required: false
+    default: 'sbom-ui'
+  title:
+    description: 'Custom title for the SBOM dashboard'
+    required: false
+    default: 'SBOM Explorer'
+  theme:
+    description: 'UI theme (dark/light)'
+    required: false
+    default: 'dark'
+outputs:
+  output-path:
+    description: 'Path where the SBOM UI files were generated'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

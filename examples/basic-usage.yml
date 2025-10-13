@@ -1,0 +1,25 @@
+name: Basic SBOM Dashboard
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sbom-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate SBOM (example with Syft)
+        run: |
+          # Install Syft
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Generate SBOM
+          syft packages . -o cyclonedx-json > sbom.cyclonedx.json
+      
+      - name: Generate SBOM Dashboard
+        uses: sidbhasin13/sbom-ui-action@v1
+        with:
+          sbom-files: 'sbom.cyclonedx.json'

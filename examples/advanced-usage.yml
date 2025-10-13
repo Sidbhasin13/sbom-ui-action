@@ -1,0 +1,55 @@
+name: Advanced SBOM Dashboard
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run security audit
+        run: npm audit --audit-level=moderate --json > npm-audit.json
+      
+      - name: Generate SBOM with Syft
+        run: |
+          # Install Syft
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Generate SBOM for different components
+          mkdir -p sboms
+          syft packages . -o cyclonedx-json > sboms/frontend.cyclonedx.json
+          syft packages ./backend -o cyclonedx-json > sboms/backend.cyclonedx.json
+          syft packages ./mobile -o cyclonedx-json > sboms/mobile.cyclonedx.json
+      
+      - name: Generate vulnerability data with Trivy
+        run: |
+          # Install Trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Scan for vulnerabilities
+          trivy fs --format cyclonedx --output sboms/vulnerabilities.cyclonedx.json .
+      
+      - name: Generate Comprehensive SBOM Dashboard
+        uses: sidbhasin13/sbom-ui-action@v1
+        with:
+          sbom-files: 'sboms/**/*.cyclonedx.json'
+          output-dir: 'sbom-dashboard'
+          title: 'Multi-Component SBOM Dashboard'
+          theme: 'dark'

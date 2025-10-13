@@ -1,0 +1,167 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build action
+        run: npm run build
+      
+      - name: Test action locally
+        run: |
+          # Create test SBOM files
+          mkdir -p test-sboms
+          echo '{
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.4",
+            "version": 1,
+            "metadata": {
+              "timestamp": "2024-01-01T00:00:00Z",
+              "tools": [{"vendor": "test", "name": "test-tool", "version": "1.0.0"}]
+            },
+            "components": [
+              {
+                "type": "library",
+                "name": "test-library",
+                "version": "1.0.0",
+                "purl": "pkg:npm/test-library@1.0.0",
+                "licenses": [{"license": {"id": "MIT"}}]
+              }
+            ],
+            "vulnerabilities": [
+              {
+                "id": "CVE-2024-12345",
+                "description": "Test vulnerability",
+                "ratings": [{"score": 7.5, "severity": "high", "method": "CVSSv3"}],
+                "affects": [{"ref": "pkg:npm/test-library@1.0.0"}]
+              }
+            ]
+          }' > test-sboms/test.cyclonedx.json
+          
+          # Test the action
+          node dist/index.js
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  test-integration:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      
+      - name: Test with sample data
+        run: |
+          # Create sample SBOM data
+          mkdir -p sample-sboms
+          echo '{
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.4",
+            "version": 1,
+            "metadata": {
+              "timestamp": "2024-01-01T00:00:00Z",
+              "tools": [{"vendor": "syft", "name": "syft", "version": "1.0.0"}]
+            },
+            "components": [
+              {
+                "type": "library",
+                "name": "express",
+                "version": "4.18.2",
+                "purl": "pkg:npm/express@4.18.2",
+                "licenses": [{"license": {"id": "MIT"}}]
+              },
+              {
+                "type": "library",
+                "name": "lodash",
+                "version": "4.17.21",
+                "purl": "pkg:npm/lodash@4.17.21",
+                "licenses": [{"license": {"id": "MIT"}}]
+              }
+            ],
+            "vulnerabilities": [
+              {
+                "id": "CVE-2024-12345",
+                "description": "High severity vulnerability in express",
+                "ratings": [{"score": 8.5, "severity": "high", "method": "CVSSv3"}],
+                "affects": [{"ref": "pkg:npm/express@4.18.2"}]
+              },
+              {
+                "id": "CVE-2024-12346",
+                "description": "Medium severity vulnerability in lodash",
+                "ratings": [{"score": 5.5, "severity": "medium", "method": "CVSSv3"}],
+                "affects": [{"ref": "pkg:npm/lodash@4.17.21"}]
+              }
+            ]
+          }' > sample-sboms/express.cyclonedx.json
+          
+          # Test the action with sample data
+          node dist/index.js
+          
+          # Verify output files were created
+          ls -la sbom-ui/
+          test -f sbom-ui/index.html
+          test -f sbom-ui/parse-sboms.json
+          
+          # Verify HTML contains expected content
+          grep -q "SBOM Explorer" sbom-ui/index.html
+          grep -q "express" sbom-ui/parse-sboms.json
+          grep -q "lodash" sbom-ui/parse-sboms.json
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high

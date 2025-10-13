@@ -1,0 +1,106 @@
+name: Release SBOM Dashboard
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  release-sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci
+          go mod download
+      
+      - name: Build application
+        run: |
+          # Build your application
+          npm run build
+          go build -o app ./cmd/main.go
+      
+      - name: Generate comprehensive SBOM
+        run: |
+          # Install SBOM generation tools
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Create release directory
+          mkdir -p release-sboms
+          
+          # Generate SBOM for different components
+          syft packages . -o cyclonedx-json > release-sboms/source-code.cyclonedx.json
+          syft packages dist/ -o cyclonedx-json > release-sboms/distribution.cyclonedx.json
+          syft packages . -o cyclonedx-json --file release-sboms/container-image.cyclonedx.json
+          
+          # Generate vulnerability report
+          trivy fs --format cyclonedx --output release-sboms/vulnerabilities.cyclonedx.json .
+          
+          # Add release metadata
+          echo "{
+            \"metadata\": {
+              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+              \"release\": \"${{ github.event.release.tag_name || github.event.inputs.version }}\",
+              \"repository\": \"${{ github.repository }}\",
+              \"commit\": \"${{ github.sha }}\"
+            }
+          }" > release-sboms/metadata.json
+      
+      - name: Generate Release SBOM Dashboard
+        uses: sidbhasin13/sbom-ui-action@v1
+        with:
+          sbom-files: 'release-sboms/**/*.cyclonedx.json'
+          output-dir: 'release-sbom-dashboard'
+          title: 'Release ${{ github.event.release.tag_name || github.event.inputs.version }} SBOM Dashboard'
+          theme: 'dark'
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-sboms
+          path: release-sboms/
+          retention-days: 30
+      
+      - name: Comment on release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = context.payload.release;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## SBOM Dashboard Generated
+              
+              A comprehensive Software Bill of Materials dashboard has been generated for this release.
+              
+              The dashboard includes:
+              - Component inventory
+              - Vulnerability analysis
+              - License compliance
+              - Security metrics
+              
+              Check the release artifacts to access the generated dashboard files.`
+            });
