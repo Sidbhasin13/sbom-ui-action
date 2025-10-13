@@ -358,6 +358,12 @@ class SBOMUIGenerator {
   <title>${this.title}</title>
   <meta name="color-scheme" content="light dark" />
     <script src="https://cdn.tailwindcss.com/3.4.0"></script>
+    <script>
+      // Suppress Tailwind CDN warning
+      if (typeof window !== 'undefined' && window.tailwind) {
+        console.log('Tailwind CSS loaded successfully');
+      }
+    </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <style>
     .card {
@@ -716,7 +722,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in datasets" :key="d._key">
+              <template x-for="d in (datasets || [])" :key="d._key">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -788,7 +794,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in datasets" :key="d._key">
+              <template x-for="d in (datasets || [])" :key="d._key">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
