@@ -2,6 +2,13 @@
 
 A powerful GitHub Action that parses existing Software Bill of Materials (SBOM) files and generates interactive vulnerability dashboards. This action supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities from your existing SBOM data.
 
+## 🎯 Live Demo
+
+**See the SBOM UI in action with sample data:**
+- **Demo URL**: [https://sidbhasin13.github.io/sbom-ui-action/](https://sidbhasin13.github.io/sbom-ui-action/)
+- **Features**: Interactive filtering, vulnerability analysis, mobile-responsive design
+- **Data**: Sample SBOM data with realistic vulnerabilities and components
+
 ## Features
 
 - **Beautiful UI**: Modern, responsive dashboard with dark theme
