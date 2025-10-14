@@ -838,7 +838,9 @@ class SBOMUIGenerator {
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
       
       <!-- Demo Notice -->
-      <div x-show="metaText && metaText.includes('DEMO')" class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50" style="display: none;">
+      <div x-show="metaText && metaText.includes('DEMO')" 
+           x-init="console.log('Banner check - metaText:', metaText, 'includes DEMO:', metaText && metaText.includes('DEMO'))"
+           class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <span class="text-lg">LOCK</span>
@@ -1685,6 +1687,7 @@ class SBOMUIGenerator {
             // Create fallback sample data
             this.createFallbackData();
             this.metaText = 'DEMO: Sample data - Your actual SBOM data stays private';
+            console.log('Demo mode activated, metaText set to:', this.metaText);
           }
 
           this.restoreFromHash();
