@@ -828,6 +828,20 @@ class SBOMUIGenerator {
       <h1 class="text-base sm:text-xl font-semibold">SBOM Explorer</h1>
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
       
+      <!-- Demo Notice -->
+      <div x-show="metaText.includes('DEMO')" class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50" style="display: none;">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">🔒</span>
+            <div>
+              <div class="font-semibold">Demo Mode - Sample Data</div>
+              <div class="text-sm opacity-90">Your actual SBOM data will be safe and private when you use this action in your repository</div>
+            </div>
+          </div>
+          <button @click="$el.style.display='none'" class="text-white hover:text-gray-200 text-xl">&times;</button>
+        </div>
+      </div>
+      
       <div class="hidden sm:flex items-center gap-2 ml-4">
         <span class="text-xs text-[#94a3b8]">Sort:</span>
         <select x-model="sortKey" @change="applyFilters(true)" 
@@ -1653,7 +1667,7 @@ class SBOMUIGenerator {
             console.error('Failed to load SBOM data:', error);
             // Create fallback sample data
             this.createFallbackData();
-            this.metaText = 'Loaded sample data (no SBOM files found)';
+            this.metaText = '🔒 DEMO: Sample data - Your actual SBOM data stays private';
           }
 
           this.restoreFromHash();
