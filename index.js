@@ -656,6 +656,25 @@ class SBOMUIGenerator {
       </button>
       <h1 class="text-base sm:text-xl font-semibold">SBOM Explorer</h1>
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
+      
+      <div class="hidden sm:flex items-center gap-2 ml-4">
+        <span class="text-xs text-[#94a3b8]">Sort:</span>
+        <select x-model="sortKey" @change="applyFilters(true)" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0]">
+          <option value="severityRank">Severity</option>
+          <option value="cvss">CVSS</option>
+          <option value="component">Component</option>
+          <option value="dataset">Dataset</option>
+        </select>
+        <button @click="toggleSortDir(); applyFilters(true)" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+          <span x-text="sortDir === 'desc' ? '↓' : '↑'"></span>
+        </button>
+        <button @click="resetFilters()" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+          Reset
+        </button>
+      </div>
 
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
         <button
@@ -825,6 +844,21 @@ class SBOMUIGenerator {
           <label class="text-xs text-[#94a3b8]">CVSS minimum
             <input type="number" min="0" max="10" step="0.1" x-model.number="cvssMin"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0] placeholder-[#94a3b8]" />
+          </label>
+          <label class="text-xs text-[#94a3b8]">Sort by
+            <select x-model="sortKey" @change="applyFilters(true)"
+              class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
+              <option value="severityRank">Severity</option>
+              <option value="cvss">CVSS</option>
+              <option value="component">Component</option>
+              <option value="dataset">Dataset</option>
+            </select>
+          </label>
+          <label class="text-xs text-[#94a3b8]">Sort direction
+            <button @click="toggleSortDir(); applyFilters(true)" 
+              class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+              <span x-text="sortDir === 'desc' ? 'Descending (↓)' : 'Ascending (↑)'"></span>
+            </button>
           </label>
         </div>
       </div>
@@ -1629,6 +1663,10 @@ class SBOMUIGenerator {
             this.adjustLayoutForScreenSize();
             document.body.offsetHeight;
           }, 100);
+        },
+
+        toggleSortDir() {
+          this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
         },
 
         saveView() { try { localStorage.setItem('sbom_view', location.hash); alert('View saved.'); } catch { } },
