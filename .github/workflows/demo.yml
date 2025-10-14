@@ -61,7 +61,7 @@ jobs:
                 
                 - name: Generate SBOM UI
                   uses: sidbhasin13/sbom-ui-action@main
-        with:
+                  with:
                     sbom-files: '**/*.json'  # Adjust pattern for your SBOM files
                     output-dir: 'sbom-dashboard'
                     title: 'My Project SBOM Dashboard'
