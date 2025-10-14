@@ -47,8 +47,15 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           # Remove 'v' prefix if present
           VERSION=${VERSION#v}
-          npm version $VERSION --no-git-tag-version
-          echo "Updated package.json to version $VERSION"
+          
+          # Check if version is different from current
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if [ "$CURRENT_VERSION" != "$VERSION" ]; then
+            npm version $VERSION --no-git-tag-version
+            echo "Updated package.json from $CURRENT_VERSION to $VERSION"
+          else
+            echo "Package.json already at version $VERSION, skipping update"
+          fi
       
       - name: Generate changelog
         id: changelog
