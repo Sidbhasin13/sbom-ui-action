@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build outputs
-dist/
+# dist/ - needed for GitHub Actions
 build/
 *.tgz
 
@@ -104,3 +104,6 @@ playwright/.cache/
 # SBOM test files
 test-sboms/
 sample-data/
+
+# Remove dist from gitignore since it's needed for GitHub Actions
+dist
