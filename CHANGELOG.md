@@ -1,13 +1,8 @@
 ## [Unreleased] - 2025-10-14
 
-### Fixed
-- fix: handle version update when package.json already has correct version (02732c4)
-
 ### Changed
-- docs: update changelog with latest changes (e4e9378)
-
-### Changed
-- Merge branch 'main' of https://github.com/Sidbhasin13/sbom-ui-action (ab3ce48)
+- docs: update changelog with latest changes (b1e8f23)
+- docs: add version strategy section explaining @v1 usage (529896b)
 
 ## [Unreleased]
 
