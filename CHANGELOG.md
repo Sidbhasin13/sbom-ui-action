@@ -3,17 +3,20 @@
 ### Fixed
 - Fix: UI specific changes (da7ac02)
 - Fix: UI specific instructions (fdc1e1b)
+- Fix: UI specific instructions (ed0ead1)
 
 ### Changed
 - docs: update changelog with latest changes (b1e8f23)
 - docs: add version strategy section explaining @v1 usage (529896b)
 - docs: update changelog with latest changes (a4884f7)
 - docs: update changelog with latest changes (7667042)
+- docs: update changelog with latest changes (1f57a0d)
 
 ### Changed
 - Fixed: Dashboard Values (f287c58)
 - Merge branch 'main' of https://github.com/Sidbhasin13/sbom-ui-action (450bfd7)
 - Merge branch 'main' of https://github.com/Sidbhasin13/sbom-ui-action (9b4bc67)
+- Merge branch 'main' of https://github.com/Sidbhasin13/sbom-ui-action (519cbf4)
 
 ## [Unreleased]
 
