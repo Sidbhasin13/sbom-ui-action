@@ -662,6 +662,25 @@ class SBOMUIGenerator {
       </button>
       <h1 class="text-base sm:text-xl font-semibold">SBOM Explorer</h1>
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
+      
+      <div class="hidden sm:flex items-center gap-2 ml-4">
+        <span class="text-xs text-[#94a3b8]">Sort:</span>
+        <select x-model="sortKey" @change="applyFilters(true)" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0]">
+          <option value="severityRank">Severity</option>
+          <option value="cvss">CVSS</option>
+          <option value="component">Component</option>
+          <option value="dataset">Dataset</option>
+        </select>
+        <button @click="toggleSortDir(); applyFilters(true)" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+          <span x-text="sortDir === 'desc' ? '↓' : '↑'"></span>
+        </button>
+        <button @click="resetFilters()" 
+          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+          Reset
+        </button>
+      </div>
 
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
         <button
@@ -831,6 +850,21 @@ class SBOMUIGenerator {
           <label class="text-xs text-[#94a3b8]">CVSS minimum
             <input type="number" min="0" max="10" step="0.1" x-model.number="cvssMin"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0] placeholder-[#94a3b8]" />
+          </label>
+          <label class="text-xs text-[#94a3b8]">Sort by
+            <select x-model="sortKey" @change="applyFilters(true)"
+              class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
+              <option value="severityRank">Severity</option>
+              <option value="cvss">CVSS</option>
+              <option value="component">Component</option>
+              <option value="dataset">Dataset</option>
+            </select>
+          </label>
+          <label class="text-xs text-[#94a3b8]">Sort direction
+            <button @click="toggleSortDir(); applyFilters(true)" 
+              class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
+              <span x-text="sortDir === 'desc' ? 'Descending (↓)' : 'Ascending (↑)'"></span>
+            </button>
           </label>
         </div>
       </div>
@@ -1407,7 +1441,13 @@ class SBOMUIGenerator {
           this.selIdx = -1;
           
           try {
-            const snap = await fetch("./parse-sboms.json?_=" + Date.now()).then(r => r.json());
+            const response = await fetch("./parse-sboms.json?_=" + Date.now());
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+            }
+            const snap = await response.json();
+            console.log('Loaded data:', snap);
+            
             this.items = (snap.items || []).map((r, idx) => ({ ...r, _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx }));
             this.datasets = (snap.datasets || [])
               .map((d, i) => ({ 
@@ -1421,10 +1461,14 @@ class SBOMUIGenerator {
             this.overall = snap.overall || this.overall;
             this.metrics = snap.metrics || this.metrics;
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
+            
+            console.log('Processed items:', this.items.length);
+            console.log('Processed datasets:', this.datasets.length);
           } catch (error) {
             console.error('Failed to load SBOM data:', error);
-            // Keep the empty data initialization
-            this.metaText = 'Failed to load data';
+            // Create fallback sample data
+            this.createFallbackData();
+            this.metaText = 'Loaded sample data (no SBOM files found)';
           }
 
           this.restoreFromHash();
@@ -1635,6 +1679,72 @@ class SBOMUIGenerator {
             this.adjustLayoutForScreenSize();
             document.body.offsetHeight;
           }, 100);
+        },
+
+        toggleSortDir() {
+          this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+        },
+
+        createFallbackData() {
+          // Create fallback sample data when no SBOM data is available
+          this.items = [
+            {
+              dataset: 'sample',
+              id: 'CVE-2024-12345',
+              title: 'Sample Critical Vulnerability',
+              severity: 'CRITICAL',
+              severityRank: 4,
+              cvss: 9.8,
+              component: 'sample-library',
+              version: '1.0.0',
+              purl: 'pkg:npm/sample-library@1.0.0',
+              licenses: ['MIT'],
+              direct: true,
+              cwes: [],
+              urls: [],
+              fixedVersions: [],
+              _key: 'sample::CVE-2024-12345::0'
+            },
+            {
+              dataset: 'sample',
+              id: 'CVE-2024-12346',
+              title: 'Sample High Vulnerability',
+              severity: 'HIGH',
+              severityRank: 3,
+              cvss: 7.5,
+              component: 'another-library',
+              version: '2.1.0',
+              purl: 'pkg:npm/another-library@2.1.0',
+              licenses: ['Apache-2.0'],
+              direct: true,
+              cwes: [],
+              urls: [],
+              fixedVersions: ['2.2.0'],
+              _key: 'sample::CVE-2024-12346::1'
+            }
+          ];
+          
+          this.datasets = [{
+            id: 'sample',
+            created: new Date().toISOString(),
+            components: 2,
+            vulnerabilities: 2,
+            severityCounts: { CRITICAL: 1, HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 },
+            _key: 'ds-sample'
+          }];
+          
+          this.overall = {
+            total: 2,
+            severityCounts: { CRITICAL: 1, HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 }
+          };
+          
+          this.metrics = {
+            fixAvailabilityRate: 50,
+            topCVEs: [
+              { id: 'CVE-2024-12345', count: 1, datasets: ['sample'], maxCVSS: 9.8, worstSeverityRank: 4 },
+              { id: 'CVE-2024-12346', count: 1, datasets: ['sample'], maxCVSS: 7.5, worstSeverityRank: 3 }
+            ]
+          };
         },
 
         saveView() { try { localStorage.setItem('sbom_view', location.hash); alert('View saved.'); } catch { } },

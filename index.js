@@ -1435,7 +1435,13 @@ class SBOMUIGenerator {
           this.selIdx = -1;
           
           try {
-            const snap = await fetch("./parse-sboms.json?_=" + Date.now()).then(r => r.json());
+            const response = await fetch("./parse-sboms.json?_=" + Date.now());
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+            }
+            const snap = await response.json();
+            console.log('Loaded data:', snap);
+            
             this.items = (snap.items || []).map((r, idx) => ({ ...r, _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx }));
             this.datasets = (snap.datasets || [])
               .map((d, i) => ({ 
@@ -1449,10 +1455,14 @@ class SBOMUIGenerator {
             this.overall = snap.overall || this.overall;
             this.metrics = snap.metrics || this.metrics;
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
+            
+            console.log('Processed items:', this.items.length);
+            console.log('Processed datasets:', this.datasets.length);
           } catch (error) {
             console.error('Failed to load SBOM data:', error);
-            // Keep the empty data initialization
-            this.metaText = 'Failed to load data';
+            // Create fallback sample data
+            this.createFallbackData();
+            this.metaText = 'Loaded sample data (no SBOM files found)';
           }
 
           this.restoreFromHash();
@@ -1667,6 +1677,68 @@ class SBOMUIGenerator {
 
         toggleSortDir() {
           this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+        },
+
+        createFallbackData() {
+          // Create fallback sample data when no SBOM data is available
+          this.items = [
+            {
+              dataset: 'sample',
+              id: 'CVE-2024-12345',
+              title: 'Sample Critical Vulnerability',
+              severity: 'CRITICAL',
+              severityRank: 4,
+              cvss: 9.8,
+              component: 'sample-library',
+              version: '1.0.0',
+              purl: 'pkg:npm/sample-library@1.0.0',
+              licenses: ['MIT'],
+              direct: true,
+              cwes: [],
+              urls: [],
+              fixedVersions: [],
+              _key: 'sample::CVE-2024-12345::0'
+            },
+            {
+              dataset: 'sample',
+              id: 'CVE-2024-12346',
+              title: 'Sample High Vulnerability',
+              severity: 'HIGH',
+              severityRank: 3,
+              cvss: 7.5,
+              component: 'another-library',
+              version: '2.1.0',
+              purl: 'pkg:npm/another-library@2.1.0',
+              licenses: ['Apache-2.0'],
+              direct: true,
+              cwes: [],
+              urls: [],
+              fixedVersions: ['2.2.0'],
+              _key: 'sample::CVE-2024-12346::1'
+            }
+          ];
+          
+          this.datasets = [{
+            id: 'sample',
+            created: new Date().toISOString(),
+            components: 2,
+            vulnerabilities: 2,
+            severityCounts: { CRITICAL: 1, HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 },
+            _key: 'ds-sample'
+          }];
+          
+          this.overall = {
+            total: 2,
+            severityCounts: { CRITICAL: 1, HIGH: 1, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 }
+          };
+          
+          this.metrics = {
+            fixAvailabilityRate: 50,
+            topCVEs: [
+              { id: 'CVE-2024-12345', count: 1, datasets: ['sample'], maxCVSS: 9.8, worstSeverityRank: 4 },
+              { id: 'CVE-2024-12346', count: 1, datasets: ['sample'], maxCVSS: 7.5, worstSeverityRank: 3 }
+            ]
+          };
         },
 
         saveView() { try { localStorage.setItem('sbom_view', location.hash); alert('View saved.'); } catch { } },
