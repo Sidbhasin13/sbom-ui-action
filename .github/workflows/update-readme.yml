@@ -1,0 +1,60 @@
+name: Update README on Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get release info
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "body=${{ github.event.release.body }}" >> $GITHUB_OUTPUT
+          else
+            # For manual dispatch, get latest release
+            VERSION=$(gh release view --json tagName -q .tagName)
+            BODY=$(gh release view --json body -q .body)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "body=$BODY" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update README with latest version
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          echo "Updating README for version: $VERSION"
+          
+          # Update version references in README
+          sed -i "s/sidbhasin13\/sbom-ui-action@[^[:space:]]*/sidbhasin13\/sbom-ui-action@$VERSION/g" README.md
+          
+          # Update examples
+          find examples/ -name "*.yml" -exec sed -i "s/sidbhasin13\/sbom-ui-action@[^[:space:]]*/sidbhasin13\/sbom-ui-action@$VERSION/g" {} \;
+          
+          echo "Updated version references to $VERSION"
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md examples/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update version references to ${{ steps.release.outputs.version }}"
+            git push origin main
+            echo "Updated README with latest version"
+          fi

@@ -1,0 +1,208 @@
+name: Release and Changelog
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.1)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Get version from tag or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+          echo "Version: ${{ steps.version.outputs.version }}"
+      
+      - name: Update package.json version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+          npm version $VERSION --no-git-tag-version
+          echo "Updated package.json to version $VERSION"
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+          
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, using all commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            echo "Previous tag: $PREVIOUS_TAG"
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+          
+          # Get current date in YYYY-MM-DD format
+          CURRENT_DATE=$(date +%Y-%m-%d)
+          
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -i "feat:" || echo "")
+          FIXES=$(echo "$COMMITS" | grep -i "fix:" || echo "")
+          DOCS=$(echo "$COMMITS" | grep -i "docs:" || echo "")
+          CHORE=$(echo "$COMMITS" | grep -i "chore:" || echo "")
+          SECURITY=$(echo "$COMMITS" | grep -i "security:" || echo "")
+          OTHER=$(echo "$COMMITS" | grep -v -i -E "(feat:|fix:|docs:|chore:|security:)" || echo "")
+          
+          # Create new changelog entry
+          cat > new_changelog.md << EOF
+          # Changelog
+          
+          All notable changes to this project will be documented in this file.
+          
+          The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+          and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+          
+          ## [Unreleased]
+          
+          ### Added
+          - TBD
+          
+          ### Changed
+          - TBD
+          
+          ### Deprecated
+          - TBD
+          
+          ### Removed
+          - TBD
+          
+          ### Fixed
+          - TBD
+          
+          ### Security
+          - TBD
+          
+          ---
+          
+          ## [$VERSION] - $CURRENT_DATE
+          
+          EOF
+          
+          # Add categorized sections
+          if [ -n "$FEATURES" ]; then
+            echo "### Added" >> new_changelog.md
+            echo "$FEATURES" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            echo "### Fixed" >> new_changelog.md
+            echo "$FIXES" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          if [ -n "$DOCS" ]; then
+            echo "### Changed" >> new_changelog.md
+            echo "$DOCS" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          if [ -n "$CHORE" ]; then
+            echo "### Changed" >> new_changelog.md
+            echo "$CHORE" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          if [ -n "$SECURITY" ]; then
+            echo "### Security" >> new_changelog.md
+            echo "$SECURITY" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          if [ -n "$OTHER" ]; then
+            echo "### Changed" >> new_changelog.md
+            echo "$OTHER" >> new_changelog.md
+            echo "" >> new_changelog.md
+          fi
+          
+          # If changelog exists, prepend new entry
+          if [ -f "CHANGELOG.md" ]; then
+            # Remove the unreleased section from existing changelog
+            sed '/^## \[Unreleased\]/,/^---$/d' CHANGELOG.md > temp_changelog.md
+            # Combine new entry with existing changelog
+            cat new_changelog.md temp_changelog.md > CHANGELOG.md
+            rm temp_changelog.md
+          else
+            mv new_changelog.md CHANGELOG.md
+          fi
+          
+          echo "Changelog updated for version $VERSION with date $CURRENT_DATE"
+      
+      - name: Update README version references
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Update version references in README
+          sed -i "s/sidbhasin13\/sbom-ui-action@[^[:space:]]*/sidbhasin13\/sbom-ui-action@$VERSION/g" README.md
+          sed -i "s/sidbhasin13\/sbom-ui-action@[^[:space:]]*/sidbhasin13\/sbom-ui-action@$VERSION/g" examples/*.yml
+          echo "Updated version references to $VERSION"
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json CHANGELOG.md README.md examples/
+          git commit -m "chore: update version to ${{ steps.version.outputs.version }} and generate changelog" || echo "No changes to commit"
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## What's New in ${{ steps.version.outputs.version }}
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Installation
+            
+            ```yaml
+            - uses: sidbhasin13/sbom-ui-action@${{ steps.version.outputs.version }}
+            ```
+            
+            ## Full Changelog
+            
+            See [CHANGELOG.md](https://github.com/sidbhasin13/sbom-ui-action/blob/main/CHANGELOG.md) for the complete changelog.
+          draft: false
+          prerelease: false
+      
+      - name: Push changes
+        run: |
+          git push origin main || echo "No changes to push"

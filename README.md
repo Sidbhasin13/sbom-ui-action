@@ -25,8 +25,6 @@ A **completely flexible** GitHub Action that automatically finds and parses Soft
 
 ## Important: Previewing Your Dashboard
 
-**Don't just double-click the HTML files!** Due to browser security restrictions, you need to use a local web server to preview your dashboard properly.
-
 **Why this section exists:** If you don't want to deploy your dashboard to any hosting service and just want to visualize your SBOM data locally, you can download the generated artifact (usually named `sbom-dashboard` or `sbom-ui-demo`) and view it on your local machine. This section explains how to do that properly for better readability and full functionality.
 
 ### Why Preview Scripts Are Needed
@@ -361,12 +359,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### v1.0.0
-- Initial release
-- Support for CycloneDX and SPDX formats
-- Interactive dashboard with filtering and visualization
-- Mobile responsive design
-- CSV export functionality
+See [CHANGELOG.md](CHANGELOG.md) for the complete changelog.
 
 ---
 

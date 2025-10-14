@@ -4,7 +4,11 @@
   "description": "GitHub Action to generate and deploy interactive SBOM vulnerability dashboards",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "release": "node scripts/release.js",
+    "version:patch": "npm run release v$(npm version patch --no-git-tag-version | sed 's/v//')",
+    "version:minor": "npm run release v$(npm version minor --no-git-tag-version | sed 's/v//')",
+    "version:major": "npm run release v$(npm version major --no-git-tag-version | sed 's/v//')"
   },
   "keywords": [
     "sbom",
