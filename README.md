@@ -46,21 +46,43 @@ When you open HTML files directly in your browser (using `file://` protocol), yo
 **Step 2: Extract the Artifact**
 1. **Extract the first ZIP file** - you'll get a folder named `github-pages`
 2. **Inside that folder, extract the second ZIP file** - this contains the actual dashboard files
-3. You should now see files like `index.html`, `parse-sboms.json`, and preview scripts
+3. You should now see files like `index.html`, `parse-sboms.json`, and `PREVIEW-INSTRUCTIONS.md`
+
+**Security Note:** The artifact contains only static HTML, CSS, and JSON files. No executable scripts or potentially harmful content. If your antivirus flags the download, it's a false positive due to the ZIP structure.
 
 **Step 3: Preview the Dashboard**
 
-**Option 1: Try Double-Clicking the Scripts (Easiest)**
-- **Windows**: Double-click `start-preview.bat`
-- **Mac/Linux**: Double-click `start-preview.sh` or run `./start-preview.sh` in terminal
-- **Manual**: Run `python3 start-preview.py`
+**Option 1: Python Server (Recommended)**
+```bash
+# Navigate to the dashboard folder
+cd github-pages
 
-**Option 2: If Double-Clicking Doesn't Work**
-- **Windows**: Right-click `start-preview.bat` → "Run as administrator"
-- **All platforms**: Open terminal in the dashboard folder and run the script manually
-- **Alternative servers**: `npx serve .`, `php -S localhost:8000`, etc.
+# Start a simple server
+python3 -m http.server 8000
 
-**Option 3: Manual Server (If scripts don't work at all)**
+# Open http://localhost:8000 in your browser
+```
+
+**Option 2: Node.js Server**
+```bash
+# Install serve globally (one time)
+npm install -g serve
+
+# Start server
+serve -p 8000
+
+# Open http://localhost:8000 in your browser
+```
+
+**Option 3: PHP Server**
+```bash
+# Start PHP server
+php -S localhost:8000
+
+# Open http://localhost:8000 in your browser
+```
+
+**Option 4: Any Other Local Server**
 ```bash
 # Navigate to your dashboard folder
 cd github-pages
