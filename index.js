@@ -143,8 +143,8 @@ class SBOMUIGenerator {
     for (const pattern of patterns) {
       try {
         const matches = await glob.glob(pattern, { 
-          cwd: process.cwd(),
-          absolute: true,
+        cwd: process.cwd(),
+        absolute: true,
           nodir: true,
           ignore: [
             '**/node_modules/**',
@@ -154,7 +154,7 @@ class SBOMUIGenerator {
             '**/coverage/**',
             '**/test-results/**'
           ]
-        });
+      });
       files.push(...matches);
         core.info(`Pattern "${pattern}" found ${matches.length} files`);
       } catch (error) {
@@ -1676,7 +1676,12 @@ class SBOMUIGenerator {
               topCVEs: snap.metrics?.topCVEs || []
             };
             
+            // Check if this is sample data (demo mode)
+            if (snap.items && snap.items.length > 0 && snap.items[0].dataset === 'sample') {
+              this.metaText = 'DEMO: Sample data - Your actual SBOM data stays private';
+            } else {
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
+            }
             
             console.log('Processed items:', this.items.length);
             console.log('Processed datasets:', this.datasets.length);

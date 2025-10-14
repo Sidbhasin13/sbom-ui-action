@@ -60,7 +60,7 @@ jobs:
                 
                 - name: Generate SBOM UI
                   uses: sidbhasin13/sbom-ui-action@main
-                  with:
+        with:
                     sbom-files: '**/*.json'  # Adjust pattern for your SBOM files
                     output-dir: 'sbom-dashboard'
                     title: 'My Project SBOM Dashboard'
@@ -107,11 +107,26 @@ jobs:
                   .feature { margin: 15px 0; padding: 10px; background: #f9f9f9; border-left: 4px solid #4caf50; }
               </style>
               <script>
-                  // Simple script to help with local file navigation
+                  // Fix links for local file navigation
                   window.addEventListener('load', function() {
                       console.log('Preview page loaded');
                       console.log('Current directory:', window.location.pathname);
-                      console.log('Available files should be in the same directory as this preview.html');
+                      
+                      // Fix all relative links to work with local files
+                      const links = document.querySelectorAll('a[href]');
+                      links.forEach(link => {
+                          const href = link.getAttribute('href');
+                          if (href && !href.startsWith('http') && !href.startsWith('#')) {
+                              // Get the current directory path
+                              const currentPath = window.location.pathname;
+                              const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+                              const fullPath = currentDir + href;
+                              
+                              // Update the href to use the full path
+                              link.setAttribute('href', fullPath);
+                              console.log('Fixed link:', href, '->', fullPath);
+                          }
+                      });
                   });
               </script>
           </head>
