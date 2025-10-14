@@ -106,30 +106,10 @@ jobs:
                   .btn { display: inline-block; background: #2196f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
                   .btn:hover { background: #1976d2; }
                   .feature { margin: 15px 0; padding: 10px; background: #f9f9f9; border-left: 4px solid #4caf50; }
+                  .instructions { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                  .file-list { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                  .file-list li { margin: 5px 0; }
               </style>
-              <script>
-                  // Fix links for local file navigation
-                  window.addEventListener('load', function() {
-                      console.log('Preview page loaded');
-                      console.log('Current directory:', window.location.pathname);
-                      
-                      // Fix all relative links to work with local files
-                      const links = document.querySelectorAll('a[href]');
-                      links.forEach(link => {
-                          const href = link.getAttribute('href');
-                          if (href && !href.startsWith('http') && !href.startsWith('#')) {
-                              // Get the current directory path
-                              const currentPath = window.location.pathname;
-                              const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-                              const fullPath = currentDir + href;
-                              
-                              // Update the href to use the full path
-                              link.setAttribute('href', fullPath);
-                              console.log('Fixed link:', href, '->', fullPath);
-                          }
-                      });
-                  });
-              </script>
           </head>
           <body>
               <div class="container">
@@ -142,28 +122,57 @@ jobs:
                       <strong>Safe Demo:</strong> This shows sample data only. Your actual SBOM data remains private in your repository.
                   </div>
                   
+                  <div class="instructions">
+                      <h3>📁 How to View Files</h3>
+                      <p><strong>For local viewing:</strong> Due to browser security restrictions, you need to open files directly:</p>
+                      <ol>
+                          <li>Navigate to the extracted folder in your file explorer</li>
+                          <li>Double-click on <code>index.html</code> to open the dashboard</li>
+                          <li>Open <code>DEPLOYMENT.md</code> and <code>PREVIEW-GUIDE.md</code> in a text editor</li>
+                      </ol>
+                      <p><strong>For web hosting:</strong> Upload all files to any web server for full functionality.</p>
+                  </div>
+                  
                   <div class="feature">
-                      <h3>Interactive Dashboard</h3>
+                      <h3>📊 Interactive Dashboard</h3>
                       <p>View the full interactive dashboard with sample vulnerability data</p>
-                      <a href="index.html" class="btn" target="_blank">View Dashboard</a>
+                      <div class="file-list">
+                          <strong>Files to open:</strong>
+                          <ul>
+                              <li><code>index.html</code> - Main dashboard (open in browser)</li>
+                              <li><code>assets/</code> - CSS, JS, and data files</li>
+                          </ul>
+                      </div>
                   </div>
                   
                   <div class="feature">
-                      <h3>Deployment Guide</h3>
+                      <h3>🚀 Deployment Guide</h3>
                       <p>Learn how to deploy this to your own hosting platform</p>
-                      <a href="DEPLOYMENT.md" class="btn" target="_blank">View Instructions</a>
+                      <div class="file-list">
+                          <strong>Files to read:</strong>
+                          <ul>
+                              <li><code>DEPLOYMENT.md</code> - Step-by-step deployment instructions</li>
+                              <li><code>.github/workflows/deploy.yml</code> - GitHub Pages workflow (if using GitHub)</li>
+                          </ul>
+                      </div>
                   </div>
                   
                   <div class="feature">
-                      <h3>Preview Guide</h3>
+                      <h3>📖 Preview Guide</h3>
                       <p>Detailed information about features and usage</p>
-                      <a href="PREVIEW-GUIDE.md" class="btn" target="_blank">Read Guide</a>
+                      <div class="file-list">
+                          <strong>Files to read:</strong>
+                          <ul>
+                              <li><code>PREVIEW-GUIDE.md</code> - Complete usage instructions</li>
+                              <li><code>README.md</code> - Project documentation</li>
+                          </ul>
+                      </div>
                   </div>
                   
                   <div style="text-align: center; margin-top: 30px; color: #666;">
                       <p>Ready to use in your repository? Just add the action to your workflow!</p>
                   </div>
-          </div>
+              </div>
           </body>
           </html>
           EOF
