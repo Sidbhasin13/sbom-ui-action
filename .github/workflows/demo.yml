@@ -123,18 +123,32 @@ jobs:
                   </div>
                   
                   <div class="instructions">
-                      <h3>📁 How to View Files</h3>
-                      <p><strong>For local viewing:</strong> Due to browser security restrictions, you need to open files directly:</p>
-                      <ol>
-                          <li>Navigate to the extracted folder in your file explorer</li>
-                          <li>Double-click on <code>index.html</code> to open the dashboard</li>
-                          <li>Open <code>DEPLOYMENT.md</code> and <code>PREVIEW-GUIDE.md</code> in a text editor</li>
-                      </ol>
-                      <p><strong>For web hosting:</strong> Upload all files to any web server for full functionality.</p>
+                      <h3>Important: Why You Need the Preview Scripts</h3>
+                      <p><strong>Don't just double-click the HTML files!</strong> Due to browser security restrictions, opening HTML files directly won't work properly.</p>
+                      
+                      <div style="background: #ffebee; border: 1px solid #f44336; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                          <h4>What happens if you open HTML files directly:</h4>
+                          <ul>
+                              <li>Dashboard shows "Loading..." forever</li>
+                              <li>No vulnerability data appears</li>
+                              <li>Charts and filters don't work</li>
+                              <li>Console shows CORS errors</li>
+                          </ul>
+                      </div>
+                      
+                      <div style="background: #e8f5e8; border: 1px solid #4caf50; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                          <h4>How to preview correctly:</h4>
+                          <ol>
+                              <li><strong>Try double-clicking the scripts</strong> (easiest method)</li>
+                              <li><strong>If double-clicking doesn't work:</strong> Right-click → "Run as administrator" (Windows) or open terminal and run manually</li>
+                              <li><strong>If scripts don't work at all:</strong> Start a local server manually: <code>python3 -m http.server 8000</code></li>
+                              <li><strong>Alternative servers:</strong> <code>npx serve .</code>, <code>php -S localhost:8000</code>, etc.</li>
+                          </ol>
+                      </div>
                   </div>
                   
                   <div class="feature">
-                      <h3>📊 Interactive Dashboard</h3>
+                      <h3>Interactive Dashboard</h3>
                       <p>View the full interactive dashboard with sample vulnerability data</p>
                       <div class="file-list">
                           <strong>Files to open:</strong>
@@ -146,7 +160,7 @@ jobs:
                   </div>
                   
                   <div class="feature">
-                      <h3>🚀 Deployment Guide</h3>
+                      <h3>Deployment Guide</h3>
                       <p>Learn how to deploy this to your own hosting platform</p>
                       <div class="file-list">
                           <strong>Files to read:</strong>
@@ -158,7 +172,7 @@ jobs:
                   </div>
                   
                   <div class="feature">
-                      <h3>📖 Preview Guide</h3>
+                      <h3>Preview Guide</h3>
                       <p>Detailed information about features and usage</p>
                       <div class="file-list">
                           <strong>Files to read:</strong>
@@ -209,11 +223,11 @@ jobs:
               os.chdir(os.path.dirname(os.path.abspath(__file__)))
               
               with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-                  print(f"🚀 SBOM UI Preview Server starting...")
-                  print(f"📁 Serving files from: {os.getcwd()}")
-                  print(f"🌐 Preview URL: http://localhost:{PORT}")
-                  print(f"📄 Main dashboard: http://localhost:{PORT}/index.html")
-                  print(f"📖 Preview guide: http://localhost:{PORT}/preview.html")
+                  print(f"SBOM UI Preview Server starting...")
+                  print(f"Serving files from: {os.getcwd()}")
+                  print(f"Preview URL: http://localhost:{PORT}")
+                  print(f"Main dashboard: http://localhost:{PORT}/index.html")
+                  print(f"Preview guide: http://localhost:{PORT}/preview.html")
                   print(f"")
                   print(f"Press Ctrl+C to stop the server")
                   print(f"")
@@ -221,9 +235,9 @@ jobs:
                   # Try to open browser automatically
                   try:
                       webbrowser.open(f'http://localhost:{PORT}/preview.html')
-                      print(f"✅ Opened preview in your default browser")
+                      print(f"Opened preview in your default browser")
                   except:
-                      print(f"⚠️  Could not open browser automatically. Please visit: http://localhost:{PORT}/preview.html")
+                      print(f"Could not open browser automatically. Please visit: http://localhost:{PORT}/preview.html")
                   
                   print(f"")
                   httpd.serve_forever()
@@ -232,7 +246,7 @@ jobs:
               try:
                   start_server()
               except KeyboardInterrupt:
-                  print(f"\n👋 Server stopped. Thanks for previewing!")
+                  print(f"\nServer stopped. Thanks for previewing!")
                   sys.exit(0)
           EOF
           
@@ -274,24 +288,24 @@ jobs:
           echo "Files created:"
           ls -la demo-dashboard/
           echo ""
-          echo "🎯 How to preview your SBOM UI:"
+          echo "How to preview your SBOM UI:"
           echo ""
-          echo "📥 1. Download the 'sbom-ui-demo' artifact from this workflow run"
-          echo "📂 2. Extract the zip file to a folder on your computer"
-          echo "🚀 3. Start the preview server:"
+          echo "1. Download the 'sbom-ui-demo' artifact from this workflow run"
+          echo "2. Extract the zip file to a folder on your computer"
+          echo "3. Start the preview server:"
           echo "    • Windows: Double-click 'start-preview.bat'"
           echo "    • Mac/Linux: Run './start-preview.sh' in terminal"
           echo "    • Manual: Run 'python3 start-preview.py' in the extracted folder"
           echo ""
-          echo "🌐 4. Your browser will open automatically to show the preview"
+          echo "4. Your browser will open automatically to show the preview"
           echo "    • Main dashboard: http://localhost:8000/index.html"
           echo "    • Preview guide: http://localhost:8000/preview.html"
           echo ""
-          echo "📋 Preview files available:"
+          echo "Preview files available:"
           echo "  - preview.html (main preview page with instructions)"
           echo "  - index.html (interactive dashboard)"
           echo "  - PREVIEW-GUIDE.md (usage instructions)"
           echo "  - DEPLOYMENT.md (deployment options)"
           echo "  - start-preview.py (local server script)"
           echo ""
-          echo "💡 This works for both demo data AND your real SBOM data!"
+          echo "This works for both demo data AND your real SBOM data!"

@@ -23,6 +23,43 @@ A **completely flexible** GitHub Action that automatically finds and parses Soft
 - **Format Support**: CycloneDX JSON, SPDX JSON/XML, YAML formats
 - **High Performance**: Optimized for large datasets with pagination
 
+## Important: Previewing Your Dashboard
+
+**Don't just double-click the HTML files!** Due to browser security restrictions, you need to use a local web server to preview your dashboard properly.
+
+### Why Preview Scripts Are Needed
+
+When you open HTML files directly in your browser (using `file://` protocol), you'll encounter:
+- Dashboard shows "Loading..." forever
+- No vulnerability data appears  
+- Charts and filters don't work
+- Console shows CORS errors
+
+### How to Preview Correctly
+
+**Option 1: Try Double-Clicking the Scripts (Easiest)**
+- **Windows**: Double-click `start-preview.bat`
+- **Mac/Linux**: Double-click `start-preview.sh` or run `./start-preview.sh` in terminal
+- **Manual**: Run `python3 start-preview.py`
+
+**Option 2: If Double-Clicking Doesn't Work**
+- **Windows**: Right-click `start-preview.bat` → "Run as administrator"
+- **All platforms**: Open terminal in the dashboard folder and run the script manually
+- **Alternative servers**: `npx serve .`, `php -S localhost:8000`, etc.
+
+**Option 3: Manual Server (If scripts don't work at all)**
+```bash
+# Navigate to your dashboard folder
+cd sbom-dashboard
+
+# Start a local server
+python3 -m http.server 8000
+
+# Open http://localhost:8000 in your browser
+```
+
+This will start a local web server and open your dashboard at `http://localhost:8000` with full functionality!
+
 ## Quick Start
 
 ### Super Simple - Just Works!

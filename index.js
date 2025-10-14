@@ -2179,10 +2179,10 @@ def start_server():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     
     with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-        print(f"🚀 SBOM UI Preview Server starting...")
-        print(f"📁 Serving files from: {os.getcwd()}")
-        print(f"🌐 Preview URL: http://localhost:{PORT}")
-        print(f"📄 Main dashboard: http://localhost:{PORT}/index.html")
+        print(f"SBOM UI Preview Server starting...")
+        print(f"Serving files from: {os.getcwd()}")
+        print(f"Preview URL: http://localhost:{PORT}")
+        print(f"Main dashboard: http://localhost:{PORT}/index.html")
         print(f"")
         print(f"Press Ctrl+C to stop the server")
         print(f"")
@@ -2190,9 +2190,9 @@ def start_server():
         # Try to open browser automatically
         try:
             webbrowser.open(f'http://localhost:{PORT}/index.html')
-            print(f"✅ Opened dashboard in your default browser")
+            print(f"Opened dashboard in your default browser")
         except:
-            print(f"⚠️  Could not open browser automatically. Please visit: http://localhost:{PORT}/index.html")
+            print(f"Could not open browser automatically. Please visit: http://localhost:{PORT}/index.html")
         
         print(f"")
         httpd.serve_forever()
@@ -2201,7 +2201,7 @@ if __name__ == "__main__":
     try:
         start_server()
     except KeyboardInterrupt:
-        print(f"\\n👋 Server stopped. Thanks for previewing!")
+        print(f"\\nServer stopped. Thanks for previewing!")
         sys.exit(0)`;
 
     // Create Windows batch file
@@ -2254,11 +2254,11 @@ python3 start-preview.py`;
 Your SBOM dashboard has been generated successfully! Here are several ways to deploy it:
 
 ## Files Generated
-- \`index.html\` - Main dashboard file
+- \`index.html\` - Main dashboard file (don't open directly!)
 - \`parse-sboms.json\` - Your SBOM data
-- \`start-preview.py\` - Local preview server (Python)
-- \`start-preview.bat\` - Local preview server (Windows)
-- \`start-preview.sh\` - Local preview server (Unix/Mac)
+- \`start-preview.py\` - Local preview server (Python) - **Use this to preview!**
+- \`start-preview.bat\` - Local preview server (Windows) - **Use this to preview!**
+- \`start-preview.sh\` - Local preview server (Unix/Mac) - **Use this to preview!**
 - \`deployment-info.json\` - Deployment configuration
 - \`deploy-to-github-pages.yml\` - GitHub Pages workflow
 
@@ -2296,19 +2296,37 @@ Your SBOM dashboard has been generated successfully! Here are several ways to de
 2. Ensure \`index.html\` is in the root directory
 3. Your dashboard will be live!
 
-## Preview Your Dashboard
+## Important: Preview Your Dashboard
 
-### Option 1: Use the Preview Scripts (Recommended)
+**Don't just double-click the HTML files!** Due to browser security restrictions, you need to use a local web server to preview your dashboard properly.
+
+### Why Preview Scripts Are Needed
+
+When you open HTML files directly in your browser (using \`file://\` protocol), you'll encounter:
+- Dashboard shows "Loading..." forever
+- No vulnerability data appears  
+- Charts and filters don't work
+- Console shows CORS errors
+
+### How to Preview Correctly
+
+### Option 1: Try Double-Clicking the Scripts (Easiest)
 - **Windows**: Double-click \`start-preview.bat\`
-- **Mac/Linux**: Run \`./start-preview.sh\` in terminal
+- **Mac/Linux**: Double-click \`start-preview.sh\` or run \`./start-preview.sh\` in terminal
 - **Manual**: Run \`python3 start-preview.py\`
+
+### Option 2: If Double-Clicking Doesn't Work
+- **Windows**: Right-click \`start-preview.bat\` → "Run as administrator"
+- **All platforms**: Open terminal in the dashboard folder and run the script manually
+- **Alternative servers**: \`npx serve .\`, \`php -S localhost:8000\`, etc.
 
 This will start a local server and open your dashboard in the browser at http://localhost:8000
 
-### Option 2: Manual Preview
-1. Open \`index.html\` in your web browser (may have limitations)
-2. Or use a local server: \`python -m http.server 8000\` (Python 3)
-3. Or use: \`npx serve .\` (Node.js)
+### Option 3: Manual Server (If scripts don't work at all)
+1. Use a local server: \`python -m http.server 8000\` (Python 3)
+2. Or use: \`npx serve .\` (Node.js)
+3. Or use: \`php -S localhost:8000\` (PHP)
+4. **Avoid**: Opening \`index.html\` directly (will have limitations)
 
 ## Dashboard Features
 
@@ -2326,7 +2344,7 @@ If you encounter any issues:
 2. Ensure \`parse-sboms.json\` is in the same directory as \`index.html\`
 3. Check browser console for any errors
 
-Happy vulnerability hunting! 🛡️`;
+Happy vulnerability hunting!`;
   }
 
 }
