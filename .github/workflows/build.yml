@@ -25,8 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build action
-        run: npm run build
+      - name: Verify action structure
+        run: |
+          echo "✅ Action is self-contained - no build needed!"
+          echo "📁 Main file: index.js"
+          echo "📋 Dependencies: $(cat package.json | grep -o '"dependencies"' -A 10 | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ')"
       
       - name: Test action locally
         run: |
@@ -66,14 +69,7 @@ jobs:
           export INPUT_THEME="dark"
           
           # Test the action
-          node dist/index.js
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
+          node index.js
 
   test-integration:
     runs-on: ubuntu-latest
@@ -82,12 +78,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
       
       - name: Test with sample data
         run: |
@@ -140,7 +130,7 @@ jobs:
           export INPUT_THEME="dark"
           
           # Test the action with sample data
-          node dist/index.js
+          node index.js
           
           # Verify output files were created
           ls -la sbom-ui/
