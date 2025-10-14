@@ -27,9 +27,9 @@ jobs:
       
       - name: Verify action structure
         run: |
-          echo "✅ Action is self-contained - no build needed!"
-          echo "📁 Main file: index.js"
-          echo "📋 Dependencies: $(cat package.json | grep -o '"dependencies"' -A 10 | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ')"
+          echo "Action is self-contained - no build needed!"
+          echo "Main file: index.js"
+          echo "Dependencies: $(cat package.json | grep -o '"dependencies"' -A 10 | grep -o '"[^"]*"' | tr -d '"' | tr '\n' ' ')"
       
       - name: Test action locally
         run: |
