@@ -2,28 +2,28 @@
 
 A **completely flexible** GitHub Action that automatically finds and parses Software Bill of Materials (SBOM) files from anywhere in your repository and generates interactive vulnerability dashboards. No configuration files needed - just point it to your SBOM files and it works! Supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities.
 
-## 🎯 Live Demo
+## Live Demo
 
 **See the SBOM UI in action with sample data:**
 - **Demo URL**: [https://sidbhasin13.github.io/sbom-ui-action/](https://sidbhasin13.github.io/sbom-ui-action/)
 - **Features**: Interactive filtering, vulnerability analysis, mobile-responsive design
 - **Data**: Sample SBOM data with realistic vulnerabilities and components
 
-## ✨ Key Features
+## Key Features
 
-- **🚀 Zero Configuration**: Works out of the box - no artifacts.json or config files needed
-- **🔍 Smart Discovery**: Automatically finds SBOM files anywhere in your repository
-- **📁 Flexible Locations**: Works with files in any directory structure
-- **🎨 Beautiful UI**: Modern, responsive dashboard with dark theme
-- **📊 Interactive Charts**: Donut charts, sparklines, and bar charts for data visualization
-- **🔍 Advanced Filtering**: Search, filter by severity, dataset, CVSS score, and fix availability
-- **📱 Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
-- **📈 Real-time Analytics**: Live vulnerability statistics and trends
-- **📤 Export Capabilities**: CSV export functionality
-- **📋 Format Support**: CycloneDX JSON, SPDX JSON/XML, YAML formats
-- **⚡ High Performance**: Optimized for large datasets with pagination
+- **Zero Configuration**: Works out of the box - no artifacts.json or config files needed
+- **Smart Discovery**: Automatically finds SBOM files anywhere in your repository
+- **Flexible Locations**: Works with files in any directory structure
+- **Beautiful UI**: Modern, responsive dashboard with dark theme
+- **Interactive Charts**: Donut charts, sparklines, and bar charts for data visualization
+- **Advanced Filtering**: Search, filter by severity, dataset, CVSS score, and fix availability
+- **Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
+- **Real-time Analytics**: Live vulnerability statistics and trends
+- **Export Capabilities**: CSV export functionality
+- **Format Support**: CycloneDX JSON, SPDX JSON/XML, YAML formats
+- **High Performance**: Optimized for large datasets with pagination
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Super Simple - Just Works!
 
@@ -331,4 +331,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ for the Open source Community
+Made with love for the Open source Community

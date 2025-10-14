@@ -32,17 +32,17 @@ jobs:
       
       - name: Show Preview Instructions
         run: |
-          echo "🎉 SBOM Dashboard generated successfully!"
-          echo "📁 Dashboard location: ${{ steps.generate.outputs.output-path }}"
-          echo "🔗 Preview URL: ${{ steps.generate.outputs.preview-url }}"
+          echo "SBOM Dashboard generated successfully!"
+          echo "Dashboard location: ${{ steps.generate.outputs.output-path }}"
+          echo "Preview URL: ${{ steps.generate.outputs.preview-url }}"
           echo ""
-          echo "📋 Deployment options available:"
+          echo "Deployment options available:"
           echo "1. GitHub Pages - Check the generated workflow file"
           echo "2. Netlify - Drag & drop the artifact"
           echo "3. Vercel - Import repository and set build directory"
           echo "4. Any static host - Upload the files"
           echo ""
-          echo "📖 See DEPLOYMENT.md in the output folder for detailed instructions"
+          echo "See DEPLOYMENT.md in the output folder for detailed instructions"
 
   deploy-to-github-pages:
     needs: generate-dashboard
@@ -79,6 +79,6 @@ jobs:
       
       - name: Show Live URL
         run: |
-          echo "🚀 Dashboard deployed to GitHub Pages!"
-          echo "🌐 Live URL: ${{ steps.deployment.outputs.page_url }}"
-          echo "📊 Your SBOM dashboard is now live and accessible to anyone!"
+          echo "Dashboard deployed to GitHub Pages!"
+          echo "Live URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "Your SBOM dashboard is now live and accessible to anyone!"

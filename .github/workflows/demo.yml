@@ -106,6 +106,27 @@ jobs:
                   .btn:hover { background: #1976d2; }
                   .feature { margin: 15px 0; padding: 10px; background: #f9f9f9; border-left: 4px solid #4caf50; }
               </style>
+              <script>
+                  function openFile(href) {
+                      console.log('Attempting to open:', href);
+                      console.log('Current location:', window.location.href);
+                      console.log('Files in directory:', window.location.pathname);
+                      
+                      // For local file viewing, try to open the file
+                      try {
+                          window.open(href, '_blank');
+                      } catch (e) {
+                          console.error('Failed to open file:', e);
+                          alert('Could not open file: ' + href + '\\n\\nMake sure all files are in the same directory.\\nCurrent location: ' + window.location.href);
+                      }
+                  }
+                  
+                  // Debug: List available files when page loads
+                  window.addEventListener('load', function() {
+                      console.log('Preview page loaded');
+                      console.log('Current directory:', window.location.pathname);
+                  });
+              </script>
           </head>
           <body>
               <div class="container">
@@ -121,19 +142,19 @@ jobs:
                   <div class="feature">
                       <h3>Interactive Dashboard</h3>
                       <p>View the full interactive dashboard with sample vulnerability data</p>
-                      <a href="index.html" class="btn">View Dashboard</a>
+                      <a href="index.html" class="btn" onclick="openFile(this.href); return false;">View Dashboard</a>
                   </div>
                   
                   <div class="feature">
                       <h3>Deployment Guide</h3>
                       <p>Learn how to deploy this to your own hosting platform</p>
-                      <a href="DEPLOYMENT.md" class="btn">View Instructions</a>
+                      <a href="DEPLOYMENT.md" class="btn" onclick="openFile(this.href); return false;">View Instructions</a>
                   </div>
                   
                   <div class="feature">
                       <h3>Preview Guide</h3>
                       <p>Detailed information about features and usage</p>
-                      <a href="PREVIEW-GUIDE.md" class="btn">Read Guide</a>
+                      <a href="PREVIEW-GUIDE.md" class="btn" onclick="openFile(this.href); return false;">Read Guide</a>
                   </div>
                   
                   <div style="text-align: center; margin-top: 30px; color: #666;">

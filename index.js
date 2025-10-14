@@ -9,15 +9,15 @@ let core, github, glob, yaml;
 
 // Install all dependencies if any are missing
 function installDependencies() {
-  console.log('📦 Installing missing dependencies...');
+  console.log('Installing missing dependencies...');
   try {
     // Try to install in the current directory first
     execSync('npm install @actions/core@^1.10.0 @actions/github@^6.0.0 glob@^10.3.10 js-yaml@^4.1.0', { 
       stdio: 'inherit'
     });
-    console.log('✅ Dependencies installed successfully!');
+    console.log('Dependencies installed successfully!');
   } catch (installError) {
-    console.log('⚠️ Failed to install in current directory, trying script directory...');
+    console.log('Failed to install in current directory, trying script directory...');
     try {
       // Get the directory where this script is located
       const scriptDir = path.dirname(__filename);
@@ -28,7 +28,7 @@ function installDependencies() {
         stdio: 'inherit',
         cwd: scriptDir
       });
-      console.log('✅ Dependencies installed successfully!');
+      console.log('Dependencies installed successfully!');
     } catch (secondError) {
       console.error(`Failed to install dependencies: ${secondError.message}`);
       process.exit(1);
@@ -838,7 +838,7 @@ class SBOMUIGenerator {
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
       
       <!-- Demo Notice -->
-      <div x-show="metaText.includes('DEMO')" class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50" style="display: none;">
+      <div x-show="metaText && metaText.includes('DEMO')" class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50" style="display: none;">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <span class="text-lg">LOCK</span>
@@ -2099,10 +2099,10 @@ class SBOMUIGenerator {
     const readmeFile = path.join(this.outputDir, 'DEPLOYMENT.md');
     fs.writeFileSync(readmeFile, this.generateDeploymentReadme());
 
-    core.info('📋 Deployment information generated!');
-    core.info(`📁 Check ${this.outputDir}/deployment-info.json for deployment options`);
-    core.info(`📁 Check ${this.outputDir}/DEPLOYMENT.md for detailed instructions`);
-    core.info(`📁 Check ${this.outputDir}/deploy-to-github-pages.yml for GitHub Pages workflow`);
+    core.info('Deployment information generated!');
+    core.info(`Check ${this.outputDir}/deployment-info.json for deployment options`);
+    core.info(`Check ${this.outputDir}/DEPLOYMENT.md for detailed instructions`);
+    core.info(`Check ${this.outputDir}/deploy-to-github-pages.yml for GitHub Pages workflow`);
   }
 
   generateGitHubPagesWorkflow() {
@@ -2146,17 +2146,17 @@ jobs:
   }
 
   generateDeploymentReadme() {
-    return `# 🚀 Deploy Your SBOM Dashboard
+    return `# Deploy Your SBOM Dashboard
 
 Your SBOM dashboard has been generated successfully! Here are several ways to deploy it:
 
-## 📁 Files Generated
+## Files Generated
 - \`index.html\` - Main dashboard file
 - \`parse-sboms.json\` - Your SBOM data
 - \`deployment-info.json\` - Deployment configuration
 - \`deploy-to-github-pages.yml\` - GitHub Pages workflow
 
-## 🌐 Deployment Options
+## Deployment Options
 
 ### 1. GitHub Pages (Recommended)
 **Easiest option for GitHub repositories**
@@ -2190,23 +2190,23 @@ Your SBOM dashboard has been generated successfully! Here are several ways to de
 2. Ensure \`index.html\` is in the root directory
 3. Your dashboard will be live!
 
-## 🔗 Preview Your Dashboard
+## Preview Your Dashboard
 
 To preview your dashboard locally:
 1. Open \`index.html\` in your web browser
 2. Or use a local server: \`python -m http.server 8000\` (Python 3)
 3. Or use: \`npx serve .\` (Node.js)
 
-## 📊 Dashboard Features
+## Dashboard Features
 
 Your dashboard includes:
-- 📈 Interactive vulnerability charts
-- 🔍 Advanced filtering and search
-- 📱 Mobile-responsive design
-- 📤 CSV export functionality
-- 🎨 Beautiful dark theme
+- Interactive vulnerability charts
+- Advanced filtering and search
+- Mobile-responsive design
+- CSV export functionality
+- Beautiful dark theme
 
-## 🆘 Need Help?
+## Need Help?
 
 If you encounter any issues:
 1. Check that all files are uploaded correctly
