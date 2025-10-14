@@ -184,16 +184,114 @@ jobs:
           path: 'demo-dashboard'
           retention-days: 30
 
+      - name: Create local preview server script
+        run: |
+          # Create a simple Python HTTP server script for local preview
+          cat > demo-dashboard/start-preview.py << 'EOF'
+          #!/usr/bin/env python3
+          import http.server
+          import socketserver
+          import webbrowser
+          import os
+          import sys
+          
+          PORT = 8000
+          
+          class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+              def end_headers(self):
+                  # Add CORS headers to allow local file access
+                  self.send_header('Access-Control-Allow-Origin', '*')
+                  self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+                  self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+                  super().end_headers()
+          
+          def start_server():
+              os.chdir(os.path.dirname(os.path.abspath(__file__)))
+              
+              with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
+                  print(f"🚀 SBOM UI Preview Server starting...")
+                  print(f"📁 Serving files from: {os.getcwd()}")
+                  print(f"🌐 Preview URL: http://localhost:{PORT}")
+                  print(f"📄 Main dashboard: http://localhost:{PORT}/index.html")
+                  print(f"📖 Preview guide: http://localhost:{PORT}/preview.html")
+                  print(f"")
+                  print(f"Press Ctrl+C to stop the server")
+                  print(f"")
+                  
+                  # Try to open browser automatically
+                  try:
+                      webbrowser.open(f'http://localhost:{PORT}/preview.html')
+                      print(f"✅ Opened preview in your default browser")
+                  except:
+                      print(f"⚠️  Could not open browser automatically. Please visit: http://localhost:{PORT}/preview.html")
+                  
+                  print(f"")
+                  httpd.serve_forever()
+          
+          if __name__ == "__main__":
+              try:
+                  start_server()
+              except KeyboardInterrupt:
+                  print(f"\n👋 Server stopped. Thanks for previewing!")
+                  sys.exit(0)
+          EOF
+          
+          # Make it executable
+          chmod +x demo-dashboard/start-preview.py
+          
+          # Create a batch file for Windows users
+          cat > demo-dashboard/start-preview.bat << 'EOF'
+          @echo off
+          echo Starting SBOM UI Preview Server...
+          echo.
+          echo This will start a local web server to preview your SBOM dashboard.
+          echo The dashboard will open in your default browser.
+          echo.
+          echo Press Ctrl+C to stop the server when you're done.
+          echo.
+          python start-preview.py
+          pause
+          EOF
+          
+          # Create a shell script for Unix/Linux/Mac users
+          cat > demo-dashboard/start-preview.sh << 'EOF'
+          #!/bin/bash
+          echo "Starting SBOM UI Preview Server..."
+          echo ""
+          echo "This will start a local web server to preview your SBOM dashboard."
+          echo "The dashboard will open in your default browser."
+          echo ""
+          echo "Press Ctrl+C to stop the server when you're done."
+          echo ""
+          python3 start-preview.py
+          EOF
+          
+          chmod +x demo-dashboard/start-preview.sh
+
       - name: Show preview info
         run: |
           echo "Demo preview generated successfully!"
           echo "Files created:"
           ls -la demo-dashboard/
           echo ""
-          echo "Preview files:"
-          echo "  - preview.html (main preview page)"
+          echo "🎯 How to preview your SBOM UI:"
+          echo ""
+          echo "📥 1. Download the 'sbom-ui-demo' artifact from this workflow run"
+          echo "📂 2. Extract the zip file to a folder on your computer"
+          echo "🚀 3. Start the preview server:"
+          echo "    • Windows: Double-click 'start-preview.bat'"
+          echo "    • Mac/Linux: Run './start-preview.sh' in terminal"
+          echo "    • Manual: Run 'python3 start-preview.py' in the extracted folder"
+          echo ""
+          echo "🌐 4. Your browser will open automatically to show the preview"
+          echo "    • Main dashboard: http://localhost:8000/index.html"
+          echo "    • Preview guide: http://localhost:8000/preview.html"
+          echo ""
+          echo "📋 Preview files available:"
+          echo "  - preview.html (main preview page with instructions)"
           echo "  - index.html (interactive dashboard)"
           echo "  - PREVIEW-GUIDE.md (usage instructions)"
           echo "  - DEPLOYMENT.md (deployment options)"
+          echo "  - start-preview.py (local server script)"
           echo ""
-          echo "Users can download the artifact to see the preview!"
+          echo "💡 This works for both demo data AND your real SBOM data!"

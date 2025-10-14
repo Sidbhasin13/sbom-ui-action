@@ -2107,6 +2107,9 @@ class SBOMUIGenerator {
     const readmeFile = path.join(this.outputDir, 'DEPLOYMENT.md');
     fs.writeFileSync(readmeFile, this.generateDeploymentReadme());
 
+    // Generate local preview server scripts
+    await this.generatePreviewScripts();
+
     core.info('Deployment information generated!');
     core.info(`Check ${this.outputDir}/deployment-info.json for deployment options`);
     core.info(`Check ${this.outputDir}/DEPLOYMENT.md for detailed instructions`);
@@ -2153,6 +2156,98 @@ jobs:
         uses: actions/deploy-pages@v4`;
   }
 
+  async generatePreviewScripts() {
+    // Create Python preview server script
+    const pythonScript = `#!/usr/bin/env python3
+import http.server
+import socketserver
+import webbrowser
+import os
+import sys
+
+PORT = 8000
+
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Add CORS headers to allow local file access
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        super().end_headers()
+
+def start_server():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    
+    with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
+        print(f"🚀 SBOM UI Preview Server starting...")
+        print(f"📁 Serving files from: {os.getcwd()}")
+        print(f"🌐 Preview URL: http://localhost:{PORT}")
+        print(f"📄 Main dashboard: http://localhost:{PORT}/index.html")
+        print(f"")
+        print(f"Press Ctrl+C to stop the server")
+        print(f"")
+        
+        # Try to open browser automatically
+        try:
+            webbrowser.open(f'http://localhost:{PORT}/index.html')
+            print(f"✅ Opened dashboard in your default browser")
+        except:
+            print(f"⚠️  Could not open browser automatically. Please visit: http://localhost:{PORT}/index.html")
+        
+        print(f"")
+        httpd.serve_forever()
+
+if __name__ == "__main__":
+    try:
+        start_server()
+    except KeyboardInterrupt:
+        print(f"\\n👋 Server stopped. Thanks for previewing!")
+        sys.exit(0)`;
+
+    // Create Windows batch file
+    const batchScript = `@echo off
+echo Starting SBOM UI Preview Server...
+echo.
+echo This will start a local web server to preview your SBOM dashboard.
+echo The dashboard will open in your default browser.
+echo.
+echo Press Ctrl+C to stop the server when you're done.
+echo.
+python start-preview.py
+pause`;
+
+    // Create Unix shell script
+    const shellScript = `#!/bin/bash
+echo "Starting SBOM UI Preview Server..."
+echo ""
+echo "This will start a local web server to preview your SBOM dashboard."
+echo "The dashboard will open in your default browser."
+echo ""
+echo "Press Ctrl+C to stop the server when you're done."
+echo ""
+python3 start-preview.py`;
+
+    // Write scripts to output directory
+    const pythonFile = path.join(this.outputDir, 'start-preview.py');
+    const batchFile = path.join(this.outputDir, 'start-preview.bat');
+    const shellFile = path.join(this.outputDir, 'start-preview.sh');
+
+    fs.writeFileSync(pythonFile, pythonScript);
+    fs.writeFileSync(batchFile, batchScript);
+    fs.writeFileSync(shellFile, shellScript);
+
+    // Make scripts executable on Unix systems
+    try {
+      fs.chmodSync(shellFile, '755');
+      fs.chmodSync(pythonFile, '755');
+    } catch (error) {
+      // Ignore chmod errors on Windows
+    }
+
+    core.info('Local preview scripts generated!');
+    core.info('Run start-preview.py, start-preview.bat, or start-preview.sh to preview locally');
+  }
+
   generateDeploymentReadme() {
     return `# Deploy Your SBOM Dashboard
 
@@ -2161,6 +2256,9 @@ Your SBOM dashboard has been generated successfully! Here are several ways to de
 ## Files Generated
 - \`index.html\` - Main dashboard file
 - \`parse-sboms.json\` - Your SBOM data
+- \`start-preview.py\` - Local preview server (Python)
+- \`start-preview.bat\` - Local preview server (Windows)
+- \`start-preview.sh\` - Local preview server (Unix/Mac)
 - \`deployment-info.json\` - Deployment configuration
 - \`deploy-to-github-pages.yml\` - GitHub Pages workflow
 
@@ -2200,8 +2298,15 @@ Your SBOM dashboard has been generated successfully! Here are several ways to de
 
 ## Preview Your Dashboard
 
-To preview your dashboard locally:
-1. Open \`index.html\` in your web browser
+### Option 1: Use the Preview Scripts (Recommended)
+- **Windows**: Double-click \`start-preview.bat\`
+- **Mac/Linux**: Run \`./start-preview.sh\` in terminal
+- **Manual**: Run \`python3 start-preview.py\`
+
+This will start a local server and open your dashboard in the browser at http://localhost:8000
+
+### Option 2: Manual Preview
+1. Open \`index.html\` in your web browser (may have limitations)
 2. Or use a local server: \`python -m http.server 8000\` (Python 3)
 3. Or use: \`npx serve .\` (Node.js)
 
