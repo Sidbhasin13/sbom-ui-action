@@ -25,7 +25,7 @@ A **completely flexible** GitHub Action that automatically finds and parses Soft
 
 ## Important: Previewing Your Dashboard
 
-**Why this section exists:** If you don't want to deploy your dashboard to any hosting service and just want to visualize your SBOM data locally, you can download the generated artifact (usually named `sbom-dashboard` or `sbom-ui-demo`) and view it on your local machine. This section explains how to do that properly for better readability and full functionality.
+**Why this section exists:** If you don't want to deploy your dashboard to any hosting service and just want to visualize your SBOM data locally, you can download the generated artifact (usually named `github-pages`) and view it on your local machine. This section explains how to do that properly for better readability and full functionality.
 
 ### Why Preview Scripts Are Needed
 
@@ -35,7 +35,20 @@ When you open HTML files directly in your browser (using `file://` protocol), yo
 - Charts and filters don't work
 - Console shows CORS errors
 
-### How to Preview Correctly
+### How to Download and Preview Your Dashboard
+
+**Step 1: Download the Artifact**
+1. Go to your GitHub Actions run
+2. Scroll down to the **"Artifacts"** section
+3. Download the `github-pages` artifact (this is the default name)
+4. The downloaded file will be a ZIP file
+
+**Step 2: Extract the Artifact**
+1. **Extract the first ZIP file** - you'll get a folder named `github-pages`
+2. **Inside that folder, extract the second ZIP file** - this contains the actual dashboard files
+3. You should now see files like `index.html`, `parse-sboms.json`, and preview scripts
+
+**Step 3: Preview the Dashboard**
 
 **Option 1: Try Double-Clicking the Scripts (Easiest)**
 - **Windows**: Double-click `start-preview.bat`
@@ -50,7 +63,7 @@ When you open HTML files directly in your browser (using `file://` protocol), yo
 **Option 3: Manual Server (If scripts don't work at all)**
 ```bash
 # Navigate to your dashboard folder
-cd sbom-dashboard
+cd github-pages
 
 # Start a local server
 python3 -m http.server 8000
@@ -91,7 +104,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sbom-dashboard:
+  github-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +113,8 @@ jobs:
         uses: sidbhasin13/sbom-ui-action@v1  # ← Use @v1 for latest v1.x.x
         # That's it! The action will find all SBOM files automatically
 ```
+
+**Note:** By default, this creates an artifact named `github-pages` which is perfect for GitHub Pages deployment. If you want to download and preview locally, look for the `github-pages` artifact in your Actions run.
 
 ### With Custom File Patterns
 
@@ -111,7 +126,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sbom-dashboard:
+  github-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -120,7 +135,7 @@ jobs:
         uses: sidbhasin13/sbom-ui-action@v1
         with:
           sbom-files: '**/*.json,**/*.xml,**/*.yaml'  # Find all SBOM formats
-          output-dir: 'sbom-dashboard'
+          output-dir: 'github-pages'
           title: 'My Project Security Dashboard'
 ```
 
@@ -134,7 +149,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sbom-dashboard:
+  github-pages:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,7 +158,7 @@ jobs:
         uses: sidbhasin13/sbom-ui-action@v1
         with:
           sbom-files: 'sboms/**/*.json,reports/**/*.cyclonedx.json'
-          output-dir: 'sbom-dashboard'
+          output-dir: 'github-pages'
           title: 'My Project SBOM Dashboard'
           theme: 'dark'
 ```

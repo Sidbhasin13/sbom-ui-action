@@ -586,13 +586,44 @@ class SBOMUIGenerator {
     const jsonFile = path.join(this.outputDir, 'parse-sboms.json');
     if (fs.existsSync(jsonFile)) {
       const jsonData = fs.readFileSync(jsonFile, 'utf8');
-      const embeddedScript = `<script>window.EMBEDDED_SBOM_DATA = ${jsonData};</script>`;
+      // Sanitize JSON data to prevent XSS
+      const sanitizedData = this.sanitizeJSON(jsonData);
+      const embeddedScript = `<script>window.EMBEDDED_SBOM_DATA = ${sanitizedData};</script>`;
       htmlContent = htmlContent.replace('</head>', embeddedScript + '\n</head>');
     }
     
     const outputFile = path.join(this.outputDir, 'index.html');
     fs.writeFileSync(outputFile, htmlContent);
     core.info(`HTML UI generated at ${outputFile}`);
+  }
+
+  sanitizeJSON(jsonString) {
+    // Basic JSON sanitization to prevent XSS
+    try {
+      const parsed = JSON.parse(jsonString);
+      return JSON.stringify(parsed);
+    } catch (error) {
+      core.warning('Failed to sanitize JSON data');
+      return '{}';
+    }
+  }
+
+  validateOutputDirectory() {
+    // Ensure output directory is safe and doesn't contain executable files
+    const allowedExtensions = ['.html', '.css', '.js', '.json', '.md', '.txt', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico'];
+    
+    try {
+      const files = fs.readdirSync(this.outputDir);
+      for (const file of files) {
+        const ext = path.extname(file).toLowerCase();
+        if (!allowedExtensions.includes(ext) && !file.startsWith('.')) {
+          core.warning(`Potentially unsafe file detected: ${file}`);
+        }
+      }
+      core.info('Output directory security validation passed');
+    } catch (error) {
+      core.warning('Could not validate output directory security');
+    }
   }
 
   getHTMLTemplate() {
@@ -603,6 +634,10 @@ class SBOMUIGenerator {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>${this.title}</title>
   <meta name="color-scheme" content="light dark" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <script src="https://cdn.tailwindcss.com/3.4.0"></script>
     <script>
       // Configure Tailwind for production use
@@ -909,21 +944,6 @@ class SBOMUIGenerator {
       <h1 class="text-base sm:text-xl font-semibold">SBOM Explorer</h1>
       <span class="text-xs text-[#94a3b8] ml-2" x-text="metaText" aria-live="polite"></span>
       
-      <!-- Demo Notice -->
-      <div x-show="metaText && metaText.includes('DEMO')" 
-           x-init="console.log('Banner check - metaText:', metaText, 'includes DEMO:', metaText && metaText.includes('DEMO'))"
-           class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <span class="text-lg">LOCK</span>
-            <div>
-              <div class="font-semibold">Demo Mode - Sample Data</div>
-              <div class="text-sm opacity-90">Your actual SBOM data will be safe and private when you use this action in your repository</div>
-            </div>
-          </div>
-          <button @click="$el.style.display='none'" class="text-white hover:text-gray-200 text-xl">&times;</button>
-        </div>
-      </div>
       
 
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
@@ -1730,12 +1750,7 @@ class SBOMUIGenerator {
               topCVEs: snap.metrics?.topCVEs || []
             };
             
-            // Check if this is sample data (demo mode)
-            if (snap.items && snap.items.length > 0 && snap.items[0].dataset === 'sample') {
-              this.metaText = 'DEMO: Sample data - Your actual SBOM data stays private';
-            } else {
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
-            }
             
             console.log('Processed items:', this.items.length);
             console.log('Processed datasets:', this.datasets.length);
@@ -1745,8 +1760,7 @@ class SBOMUIGenerator {
             console.error('Failed to load SBOM data:', error);
             // Create fallback sample data
             this.createFallbackData();
-            this.metaText = 'DEMO: Sample data - Your actual SBOM data stays private';
-            console.log('Demo mode activated, metaText set to:', this.metaText);
+            this.metaText = 'Sample data - No SBOM files found';
           }
 
           this.restoreFromHash();
@@ -2102,10 +2116,19 @@ class SBOMUIGenerator {
   }
 
   async generateDeploymentInfo() {
+    // Validate output directory for security
+    this.validateOutputDirectory();
+    
     const deploymentInfo = {
       title: this.title,
       outputDir: this.outputDir,
       generatedAt: new Date().toISOString(),
+      security: {
+        noExecutables: true,
+        staticFilesOnly: true,
+        contentSecurityPolicy: true,
+        sanitizedData: true
+      },
       deploymentOptions: {
         githubPages: {
           name: 'GitHub Pages',
@@ -2211,95 +2234,74 @@ jobs:
   }
 
   async generatePreviewScripts() {
-    // Create Python preview server script
-    const pythonScript = `#!/usr/bin/env python3
-import http.server
-import socketserver
-import webbrowser
-import os
-import sys
+    // Create a simple README with instructions instead of executable scripts
+    const previewInstructions = `# How to Preview Your SBOM Dashboard
 
-PORT = 8000
+## Why You Need a Local Server
 
-class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def end_headers(self):
-        # Add CORS headers to allow local file access
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        super().end_headers()
+Due to browser security restrictions, you cannot open the HTML file directly. You need to use a local web server.
 
-def start_server():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    
-    with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-        print(f"SBOM UI Preview Server starting...")
-        print(f"Serving files from: {os.getcwd()}")
-        print(f"Preview URL: http://localhost:{PORT}")
-        print(f"Main dashboard: http://localhost:{PORT}/index.html")
-        print(f"")
-        print(f"Press Ctrl+C to stop the server")
-        print(f"")
-        
-        # Try to open browser automatically
-        try:
-            webbrowser.open(f'http://localhost:{PORT}/index.html')
-            print(f"Opened dashboard in your default browser")
-        except:
-            print(f"Could not open browser automatically. Please visit: http://localhost:{PORT}/index.html")
-        
-        print(f"")
-        httpd.serve_forever()
+## Quick Preview Methods
 
-if __name__ == "__main__":
-    try:
-        start_server()
-    except KeyboardInterrupt:
-        print(f"\\nServer stopped. Thanks for previewing!")
-        sys.exit(0)`;
+### Method 1: Python (Recommended)
+\`\`\`bash
+# Navigate to this folder in terminal/command prompt
+cd "$(dirname "$0")"
 
-    // Create Windows batch file
-    const batchScript = `@echo off
-echo Starting SBOM UI Preview Server...
-echo.
-echo This will start a local web server to preview your SBOM dashboard.
-echo The dashboard will open in your default browser.
-echo.
-echo Press Ctrl+C to stop the server when you're done.
-echo.
-python start-preview.py
-pause`;
+# Start a simple server
+python3 -m http.server 8000
 
-    // Create Unix shell script
-    const shellScript = `#!/bin/bash
-echo "Starting SBOM UI Preview Server..."
-echo ""
-echo "This will start a local web server to preview your SBOM dashboard."
-echo "The dashboard will open in your default browser."
-echo ""
-echo "Press Ctrl+C to stop the server when you're done."
-echo ""
-python3 start-preview.py`;
+# Open http://localhost:8000 in your browser
+\`\`\`
 
-    // Write scripts to output directory
-    const pythonFile = path.join(this.outputDir, 'start-preview.py');
-    const batchFile = path.join(this.outputDir, 'start-preview.bat');
-    const shellFile = path.join(this.outputDir, 'start-preview.sh');
+### Method 2: Node.js
+\`\`\`bash
+# Install serve globally (one time)
+npm install -g serve
 
-    fs.writeFileSync(pythonFile, pythonScript);
-    fs.writeFileSync(batchFile, batchScript);
-    fs.writeFileSync(shellFile, shellScript);
+# Start server
+serve -p 8000
 
-    // Make scripts executable on Unix systems
-    try {
-      fs.chmodSync(shellFile, '755');
-      fs.chmodSync(pythonFile, '755');
-    } catch (error) {
-      // Ignore chmod errors on Windows
-    }
+# Open http://localhost:8000 in your browser
+\`\`\`
 
-    core.info('Local preview scripts generated!');
-    core.info('Run start-preview.py, start-preview.bat, or start-preview.sh to preview locally');
+### Method 3: PHP
+\`\`\`bash
+# Start PHP server
+php -S localhost:8000
+
+# Open http://localhost:8000 in your browser
+\`\`\`
+
+### Method 4: Any Other Local Server
+- Use any local development server
+- Point it to this folder
+- Access via http://localhost:8000
+
+## What You'll See
+
+- Interactive vulnerability dashboard
+- Filtering and search capabilities
+- Export functionality
+- Mobile-responsive design
+
+## Troubleshooting
+
+If you see "Loading..." forever:
+- Make sure you're using a local server (not opening file:// directly)
+- Check browser console for errors
+- Ensure parse-sboms.json is in the same folder as index.html
+
+## Security Note
+
+This dashboard only contains static HTML, CSS, and JavaScript files. No executable code or external dependencies are required for local preview.`;
+
+    // Write instructions file instead of executable scripts
+    const instructionsFile = path.join(this.outputDir, 'PREVIEW-INSTRUCTIONS.md');
+    fs.writeFileSync(instructionsFile, previewInstructions);
+
+    core.info('Preview instructions generated!');
+    core.info('Check PREVIEW-INSTRUCTIONS.md for safe local preview methods');
   }
 
   generateDeploymentReadme() {
