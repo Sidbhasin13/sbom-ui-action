@@ -139,13 +139,13 @@ jobs:
                   <div style="text-align: center; margin-top: 30px; color: #666;">
                       <p>Ready to use in your repository? Just add the action to your workflow!</p>
                   </div>
-              </div>
+          </div>
           </body>
           </html>
           EOF
 
       - name: Upload demo artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-ui-demo
           path: 'demo-dashboard'
