@@ -4,8 +4,6 @@
   "description": "GitHub Action to generate and deploy interactive SBOM vulnerability dashboards",
   "main": "index.js",
   "scripts": {
-    "build": "npm run package",
-    "package": "ncc build index.js -o dist",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
@@ -24,9 +22,6 @@
     "@actions/github": "^6.0.0",
     "glob": "^10.3.10",
     "js-yaml": "^4.1.0"
-  },
-  "devDependencies": {
-    "@vercel/ncc": "^0.38.0"
   },
   "engines": {
     "node": ">=20.0.0"

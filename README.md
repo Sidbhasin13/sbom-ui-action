@@ -1,6 +1,6 @@
 # SBOM UI Action
 
-A powerful GitHub Action that parses existing Software Bill of Materials (SBOM) files and generates interactive vulnerability dashboards. This action supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities from your existing SBOM data.
+A **completely flexible** GitHub Action that automatically finds and parses Software Bill of Materials (SBOM) files from anywhere in your repository and generates interactive vulnerability dashboards. No configuration files needed - just point it to your SBOM files and it works! Supports multiple SBOM formats including CycloneDX, SPDX, and more, providing a beautiful, responsive web interface for analyzing security vulnerabilities.
 
 ## 🎯 Live Demo
 
@@ -9,20 +9,43 @@ A powerful GitHub Action that parses existing Software Bill of Materials (SBOM) 
 - **Features**: Interactive filtering, vulnerability analysis, mobile-responsive design
 - **Data**: Sample SBOM data with realistic vulnerabilities and components
 
-## Features
+## ✨ Key Features
 
-- **Beautiful UI**: Modern, responsive dashboard with dark theme
-- **Interactive Charts**: Donut charts, sparklines, and bar charts for data visualization
-- **Advanced Filtering**: Search, filter by severity, dataset, CVSS score, and fix availability
-- **Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
-- **Real-time Analytics**: Live vulnerability statistics and trends
-- **Export Capabilities**: CSV export functionality
-- **Format Support**: CycloneDX JSON, SPDX JSON/XML, YAML formats
-- **High Performance**: Optimized for large datasets with pagination
+- **🚀 Zero Configuration**: Works out of the box - no artifacts.json or config files needed
+- **🔍 Smart Discovery**: Automatically finds SBOM files anywhere in your repository
+- **📁 Flexible Locations**: Works with files in any directory structure
+- **🎨 Beautiful UI**: Modern, responsive dashboard with dark theme
+- **📊 Interactive Charts**: Donut charts, sparklines, and bar charts for data visualization
+- **🔍 Advanced Filtering**: Search, filter by severity, dataset, CVSS score, and fix availability
+- **📱 Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
+- **📈 Real-time Analytics**: Live vulnerability statistics and trends
+- **📤 Export Capabilities**: CSV export functionality
+- **📋 Format Support**: CycloneDX JSON, SPDX JSON/XML, YAML formats
+- **⚡ High Performance**: Optimized for large datasets with pagination
 
-## Quick Start
+## 🚀 Quick Start
 
-### Basic Usage
+### Super Simple - Just Works!
+
+```yaml
+name: Generate SBOM Dashboard
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sbom-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate SBOM UI
+        uses: sidbhasin13/sbom-ui-action@v1
+        # That's it! The action will find all SBOM files automatically
+```
+
+### With Custom File Patterns
 
 ```yaml
 name: Generate SBOM Dashboard
@@ -40,7 +63,9 @@ jobs:
       - name: Generate SBOM UI
         uses: sidbhasin13/sbom-ui-action@v1
         with:
-          sbom-files: '**/*.cyclonedx.json'
+          sbom-files: '**/*.json,**/*.xml,**/*.yaml'  # Find all SBOM formats
+          output-dir: 'sbom-dashboard'
+          title: 'My Project Security Dashboard'
 ```
 
 ### With Custom Configuration

@@ -4,7 +4,35 @@ const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { glob } = require('glob');
+
+// Handle dependencies dynamically
+let glob, yaml;
+try {
+  glob = require('glob');
+} catch (error) {
+  core.info('📦 Installing missing dependencies...');
+  try {
+    execSync('npm install glob@^10.3.10', { stdio: 'inherit' });
+    glob = require('glob');
+    core.info('✅ Dependencies installed successfully!');
+  } catch (installError) {
+    core.setFailed(`Failed to install dependencies: ${installError.message}`);
+    process.exit(1);
+  }
+}
+
+try {
+  yaml = require('js-yaml');
+} catch (error) {
+  core.info('📦 Installing js-yaml...');
+  try {
+    execSync('npm install js-yaml@^4.1.0', { stdio: 'inherit' });
+    yaml = require('js-yaml');
+  } catch (installError) {
+    core.warning(`Failed to install js-yaml: ${installError.message}`);
+    yaml = null;
+  }
+}
 
 class SBOMUIGenerator {
   constructor() {
@@ -14,8 +42,8 @@ class SBOMUIGenerator {
     this.theme = core.getInput('theme') || process.env.INPUT_THEME || 'dark';
     
     // Debug logging
-    core.info(`SBOM Files: ${this.sbomFiles}`);
-    core.info(`Output Dir: ${this.outputDir}`);
+    core.info(`SBOM Files Pattern: ${this.sbomFiles}`);
+    core.info(`Output Directory: ${this.outputDir}`);
     core.info(`Title: ${this.title}`);
     core.info(`Theme: ${this.theme}`);
   }
@@ -27,7 +55,7 @@ class SBOMUIGenerator {
       // Create output directory
       await this.createOutputDir();
       
-      // Find and process SBOM files
+      // Find and process SBOM files from anywhere in the repository
       const sbomFiles = await this.findSBOMFiles();
       core.info(`Found ${sbomFiles.length} SBOM files`);
       
@@ -46,10 +74,13 @@ class SBOMUIGenerator {
       // Copy static assets
       await this.copyStaticAssets();
       
+      // Generate preview and deployment info
+      await this.generateDeploymentInfo();
+      
       // Set output
       core.setOutput('output-path', this.outputDir);
+      core.setOutput('preview-url', `file://${path.resolve(this.outputDir, 'index.html')}`);
       core.info(`SBOM UI generated in: ${this.outputDir}`);
-
       core.info('SBOM UI generation completed successfully!');
       
     } catch (error) {
@@ -67,23 +98,59 @@ class SBOMUIGenerator {
     }
   }
 
+
   async findSBOMFiles() {
     const patterns = this.sbomFiles.split(',').map(p => p.trim());
     const files = [];
     
+    core.info(`Searching for SBOM files with patterns: ${patterns.join(', ')}`);
+    
+    // Search for files using all patterns
     for (const pattern of patterns) {
-      const matches = await glob(pattern, { 
-        cwd: process.cwd(),
-        absolute: true,
-        nodir: true 
-      });
+      try {
+        const matches = await glob.glob(pattern, { 
+          cwd: process.cwd(),
+          absolute: true,
+          nodir: true,
+          ignore: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/build/**',
+            '**/.git/**',
+            '**/coverage/**',
+            '**/test-results/**'
+          ]
+        });
       files.push(...matches);
+        core.info(`Pattern "${pattern}" found ${matches.length} files`);
+      } catch (error) {
+        core.warning(`Failed to search for pattern "${pattern}": ${error.message}`);
+      }
     }
     
-    return files.filter(file => {
+    // Remove duplicates and filter by supported extensions
+    const uniqueFiles = [...new Set(files)];
+    const supportedFiles = uniqueFiles.filter(file => {
       const ext = path.extname(file).toLowerCase();
-      return ['.json', '.xml', '.yaml', '.yml'].includes(ext);
+      const isSupported = ['.json', '.xml', '.yaml', '.yml'].includes(ext);
+      if (!isSupported) {
+        core.debug(`Skipping unsupported file: ${file} (extension: ${ext})`);
+      }
+      return isSupported;
     });
+    
+    core.info(`Found ${supportedFiles.length} supported SBOM files out of ${uniqueFiles.length} total files`);
+    
+    // Log found files for debugging
+    if (supportedFiles.length > 0) {
+      core.info('SBOM files found:');
+      supportedFiles.forEach(file => {
+        const relativePath = path.relative(process.cwd(), file);
+        core.info(`  - ${relativePath}`);
+      });
+    }
+    
+    return supportedFiles;
   }
 
   async parseSBOMFiles(sbomFiles) {
@@ -134,7 +201,74 @@ class SBOMUIGenerator {
   extractDatasetId(filePath) {
     const relativePath = path.relative(process.cwd(), filePath);
     const parts = relativePath.split(path.sep);
-    return parts[0] || 'default';
+    const fileName = path.basename(filePath, path.extname(filePath));
+    
+    // Strategy 1: Look for meaningful directory names in the path
+    for (let i = 0; i < parts.length - 1; i++) {
+      const dirName = parts[i].toLowerCase();
+      
+      // Skip common non-meaningful directories
+      if (['src', 'lib', 'bin', 'etc', 'var', 'tmp', 'temp'].includes(dirName)) {
+        continue;
+      }
+      
+      // Check for common patterns
+      if (dirName.includes('stable') || dirName.includes('prod') || dirName.includes('production')) return 'stable';
+      if (dirName.includes('arm64') || dirName.includes('aarch64')) return 'arm64';
+      if (dirName.includes('amd64') || dirName.includes('x86_64')) return 'amd64';
+      if (dirName.includes('backend') || dirName.includes('api')) return 'backend';
+      if (dirName.includes('frontend') || dirName.includes('web') || dirName.includes('ui')) return 'frontend';
+      if (dirName.includes('main') || dirName.includes('master')) return 'main';
+      if (dirName.includes('develop') || dirName.includes('dev')) return 'develop';
+      if (dirName.includes('release') || dirName.includes('rel')) return 'release';
+      if (dirName.includes('test') || dirName.includes('testing')) return 'test';
+      if (dirName.includes('staging') || dirName.includes('stage')) return 'staging';
+      
+      // Use directory name if it looks meaningful (not too generic)
+      if (dirName && dirName.length > 2 && !dirName.match(/^\d+$/)) {
+        return dirName.replace(/[^a-zA-Z0-9-_]/g, '-');
+      }
+    }
+    
+    // Strategy 2: Extract from filename
+    const fileNameLower = fileName.toLowerCase();
+    if (fileNameLower.includes('stable') || fileNameLower.includes('prod')) return 'stable';
+    if (fileNameLower.includes('arm64') || fileNameLower.includes('aarch64')) return 'arm64';
+    if (fileNameLower.includes('amd64') || fileNameLower.includes('x86_64')) return 'amd64';
+    if (fileNameLower.includes('backend') || fileNameLower.includes('api')) return 'backend';
+    if (fileNameLower.includes('frontend') || fileNameLower.includes('web')) return 'frontend';
+    if (fileNameLower.includes('main') || fileNameLower.includes('master')) return 'main';
+    if (fileNameLower.includes('develop') || fileNameLower.includes('dev')) return 'develop';
+    if (fileNameLower.includes('release') || fileNameLower.includes('rel')) return 'release';
+    if (fileNameLower.includes('test') || fileNameLower.includes('testing')) return 'test';
+    if (fileNameLower.includes('staging') || fileNameLower.includes('stage')) return 'staging';
+    
+    // Strategy 3: Use filename if it's not generic
+    if (fileName && fileName.length > 2 && !fileName.match(/^(sbom|bom|cyclonedx|spdx)$/i)) {
+      return fileName.replace(/[^a-zA-Z0-9-_]/g, '-');
+    }
+    
+    // Strategy 4: Use parent directory name
+    if (parts.length > 1) {
+      const parentDir = parts[parts.length - 2];
+      if (parentDir && parentDir.length > 2) {
+        return parentDir.replace(/[^a-zA-Z0-9-_]/g, '-');
+      }
+    }
+    
+    // Fallback: Generate based on file path hash for uniqueness
+    const pathHash = this.simpleHash(relativePath);
+    return `dataset-${pathHash}`;
+  }
+  
+  simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36).substring(0, 6);
   }
 
   async parseSBOM(content, filePath, datasetId) {
@@ -144,7 +278,10 @@ class SBOMUIGenerator {
       if (ext === '.json') {
         return this.parseCycloneDX(JSON.parse(content), datasetId);
       } else if (['.yaml', '.yml'].includes(ext)) {
-        const yaml = require('js-yaml');
+        if (!yaml) {
+          core.warning(`YAML parsing not available for ${filePath}. Install js-yaml to enable YAML support.`);
+          return null;
+        }
         return this.parseCycloneDX(yaml.load(content), datasetId);
       } else if (ext === '.xml') {
         return this.parseSPDXXML(content, datasetId);
@@ -747,7 +884,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in datasets" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -819,7 +956,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in datasets" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -893,11 +1030,11 @@ class SBOMUIGenerator {
 
         <div class="card xl:col-span-4">
           <div class="text-sm font-medium mb-3">Datasets in view</div>
-        <template x-if="Object.keys(perDatasetSev).length === 0">
-          <div class="muted">No datasets in the current view.</div>
-        </template>
-        <div class="space-y-3 max-h-60 overflow-auto">
-          <template x-for="(v, name) in perDatasetSev" :key="'ds-'+name">
+          <template x-if="Object.keys(perDatasetSevSafe).length === 0">
+            <div class="muted">No datasets in the current view.</div>
+          </template>
+          <div class="space-y-3 max-h-60 overflow-auto">
+            <template x-for="(v, name) in perDatasetSevSafe" :key="'ds-'+name+'-'+v.total">
               <div>
                 <div class="flex items-center justify-between text-sm">
                   <div class="font-medium truncate" x-text="name"></div>
@@ -969,7 +1106,7 @@ class SBOMUIGenerator {
             <div>
               <div class="text-sm font-medium mb-2">Severity mix</div>
               <div class="text-xs space-y-1">
-                <template x-for="seg in donutLegend" :key="'leg-'+seg.label">
+                <template x-for="(seg, idx) in donutLegendSafe" :key="'leg-'+idx+'-'+seg.label">
                   <div class="flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded" :style="\`background:\${seg.color}\`"></span>
                     <span class="text-[#94a3b8]" x-text="\`\${seg.label}: \${seg.count}\`"></span>
@@ -983,7 +1120,7 @@ class SBOMUIGenerator {
           <div class="card h-full">
             <div class="text-sm font-medium mb-2">Top components by vulnerabilities</div>
             <div class="space-y-2">
-              <template x-for="row in topComponents" :key="'tc-'+row.name">
+              <template x-for="(row, idx) in topComponentsSafe" :key="'tc-'+idx+'-'+row.name">
                 <div class="flex items-center gap-3">
                   <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                   <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1005,7 +1142,7 @@ class SBOMUIGenerator {
             <div class="muted">No CVE IDs found.</div>
           </template>
           <ul class="text-sm grid grid-cols-1 gap-3 max-h-80 overflow-auto">
-            <template x-for="cve in (metrics.topCVEs || [])" :key="'cve-'+cve.id">
+            <template x-for="(cve, idx) in (metrics.topCVEs || [])" :key="'cve-'+idx+'-'+cve.id">
               <li class="border rounded-xl p-3">
                 <div class="font-medium">
                   <button class="text-blue-600 underline" @click="applyTopCVE(cve.id)" x-text="cve.id"></button>
@@ -1036,7 +1173,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Top licenses by vulnerabilities</div>
           <div class="space-y-2">
-            <template x-for="row in topLicenses" :key="'tl-'+row.name">
+            <template x-for="(row, idx) in topLicensesSafe" :key="'tl-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1054,7 +1191,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Fix availability by dataset</div>
           <div class="space-y-2">
-            <template x-for="row in dsFixRates" :key="'dsfr-'+row.name">
+            <template x-for="(row, idx) in dsFixRatesSafe" :key="'dsfr-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-32 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1164,6 +1301,12 @@ class SBOMUIGenerator {
         filtered: [],
         paged: [],
         datasets: [],
+        get datasetsSafe() {
+          if (!Array.isArray(this.datasets)) {
+            return [];
+          }
+          return this.datasets.filter(d => d && d._key && d.id);
+        },
         overall: { total: 0, severityCounts: {} },
         metrics: { fixAvailabilityRate: 0, topCVEs: [] },
         dataset: "",
@@ -1179,6 +1322,9 @@ class SBOMUIGenerator {
         fixRateFiltered: 0,
         filterSummary: "",
         perDatasetSev: {},
+        get perDatasetSevSafe() {
+          return this.perDatasetSev && typeof this.perDatasetSev === 'object' ? this.perDatasetSev : {};
+        },
         sortKey: "severityRank",
         sortDir: "desc",
         page: 0,
@@ -1269,6 +1415,9 @@ class SBOMUIGenerator {
           UNKNOWN: { dash: '0 1000', offset: 0, color: '#d1d5db', count: 0 },
         },
         donutLegend: [],
+        get donutLegendSafe() {
+          return Array.isArray(this.donutLegend) ? this.donutLegend : [];
+        },
         buildSeverityDonut() {
           const order = this.sevBaseOrder;
           const counts = this.sevCountsFiltered || {};
@@ -1319,6 +1468,9 @@ class SBOMUIGenerator {
         },
 
         topComponents: [],
+        get topComponentsSafe() {
+          return Array.isArray(this.topComponents) ? this.topComponents : [];
+        },
         buildTopComponents() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1333,6 +1485,9 @@ class SBOMUIGenerator {
         },
 
         topLicenses: [],
+        get topLicensesSafe() {
+          return Array.isArray(this.topLicenses) ? this.topLicenses : [];
+        },
         buildTopLicenses() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1351,6 +1506,9 @@ class SBOMUIGenerator {
         },
 
         dsFixRates: [],
+        get dsFixRatesSafe() {
+          return Array.isArray(this.dsFixRates) ? this.dsFixRates : [];
+        },
         buildDsFixRates() {
           const map = {};
           if (!Array.isArray(this.filtered)) {
@@ -1421,16 +1579,42 @@ class SBOMUIGenerator {
             const snap = await response.json();
             console.log('Loaded data:', snap);
             
-            this.items = (snap.items || []).map((r, idx) => ({ ...r, _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx }));
+            // Process items with proper _key generation
+            this.items = (snap.items || []).map((r, idx) => ({ 
+              ...r, 
+              _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx 
+            }));
+            
+            // Process datasets with proper structure
             this.datasets = (snap.datasets || [])
-              .map((d, i) => ({ ...d, _key: 'ds-' + (d.id || i) }))
+              .map((d, i) => ({ 
+                ...d, 
+                _key: 'ds-' + (d.id || i),
+                id: d.id || 'dataset-' + i,
+                vulnerabilities: d.vulnerabilities || 0,
+                severityCounts: d.severityCounts || { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 }
+              }))
+              .filter(d => d && d._key && d.id) // Ensure all items have _key and id
               .sort((a, b) => String(a.id).localeCompare(String(b.id)));
-            this.overall = snap.overall || this.overall;
-            this.metrics = snap.metrics || this.metrics;
+            
+            // Process overall data
+            this.overall = {
+              total: snap.overall?.total || 0,
+              severityCounts: snap.overall?.severityCounts || { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0, UNKNOWN: 0 }
+            };
+            
+            // Process metrics data
+            this.metrics = {
+              fixAvailabilityRate: snap.metrics?.fixAvailabilityRate || 0,
+              topCVEs: snap.metrics?.topCVEs || []
+            };
+            
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
             
             console.log('Processed items:', this.items.length);
             console.log('Processed datasets:', this.datasets.length);
+            console.log('Overall total:', this.overall.total);
+            console.log('Fix availability rate:', this.metrics.fixAvailabilityRate);
           } catch (error) {
             console.error('Failed to load SBOM data:', error);
             // Create fallback sample data
@@ -1706,7 +1890,7 @@ class SBOMUIGenerator {
           };
           
           this.metrics = {
-            fixAvailabilityRate: 50,
+            fixAvailabilityRate: 50, // 1 out of 2 has fixes
             topCVEs: [
               { id: 'CVE-2024-12345', count: 1, datasets: ['sample'], maxCVSS: 9.8, worstSeverityRank: 4 },
               { id: 'CVE-2024-12346', count: 1, datasets: ['sample'], maxCVSS: 7.5, worstSeverityRank: 3 }
@@ -1788,6 +1972,183 @@ class SBOMUIGenerator {
   async copyStaticAssets() {
     // Copy any additional static assets if needed
     core.info('Static assets copied');
+  }
+
+  async generateDeploymentInfo() {
+    const deploymentInfo = {
+      title: this.title,
+      outputDir: this.outputDir,
+      generatedAt: new Date().toISOString(),
+      deploymentOptions: {
+        githubPages: {
+          name: 'GitHub Pages',
+          description: 'Deploy directly to GitHub Pages',
+          steps: [
+            '1. Go to your repository Settings',
+            '2. Navigate to Pages section',
+            '3. Set Source to "GitHub Actions"',
+            '4. Use the provided workflow below'
+          ],
+          workflow: this.generateGitHubPagesWorkflow()
+        },
+        netlify: {
+          name: 'Netlify',
+          description: 'Deploy to Netlify with drag & drop',
+          steps: [
+            '1. Go to https://netlify.com',
+            '2. Drag and drop the entire output folder',
+            '3. Your site will be live instantly!'
+          ]
+        },
+        vercel: {
+          name: 'Vercel',
+          description: 'Deploy to Vercel',
+          steps: [
+            '1. Go to https://vercel.com',
+            '2. Import your repository',
+            '3. Set build output directory to the generated folder',
+            '4. Deploy!'
+          ]
+        },
+        staticHosting: {
+          name: 'Any Static Host',
+          description: 'Deploy to any static hosting service',
+          steps: [
+            '1. Upload the entire output folder contents',
+            '2. Ensure index.html is in the root',
+            '3. Your SBOM dashboard will be live!'
+          ]
+        }
+      }
+    };
+
+    // Write deployment info
+    const infoFile = path.join(this.outputDir, 'deployment-info.json');
+    fs.writeFileSync(infoFile, JSON.stringify(deploymentInfo, null, 2));
+
+    // Generate GitHub Pages workflow
+    const workflowFile = path.join(this.outputDir, 'deploy-to-github-pages.yml');
+    fs.writeFileSync(workflowFile, this.generateGitHubPagesWorkflow());
+
+    // Generate README for deployment
+    const readmeFile = path.join(this.outputDir, 'DEPLOYMENT.md');
+    fs.writeFileSync(readmeFile, this.generateDeploymentReadme());
+
+    core.info('📋 Deployment information generated!');
+    core.info(`📁 Check ${this.outputDir}/deployment-info.json for deployment options`);
+    core.info(`📁 Check ${this.outputDir}/DEPLOYMENT.md for detailed instructions`);
+    core.info(`📁 Check ${this.outputDir}/deploy-to-github-pages.yml for GitHub Pages workflow`);
+  }
+
+  generateGitHubPagesWorkflow() {
+    return `name: Deploy SBOM Dashboard to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '${this.outputDir}/'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4`;
+  }
+
+  generateDeploymentReadme() {
+    return `# 🚀 Deploy Your SBOM Dashboard
+
+Your SBOM dashboard has been generated successfully! Here are several ways to deploy it:
+
+## 📁 Files Generated
+- \`index.html\` - Main dashboard file
+- \`parse-sboms.json\` - Your SBOM data
+- \`deployment-info.json\` - Deployment configuration
+- \`deploy-to-github-pages.yml\` - GitHub Pages workflow
+
+## 🌐 Deployment Options
+
+### 1. GitHub Pages (Recommended)
+**Easiest option for GitHub repositories**
+
+1. Copy the \`deploy-to-github-pages.yml\` file to \`.github/workflows/\` in your repository
+2. Commit and push the changes
+3. Go to your repository Settings → Pages
+4. Set Source to "GitHub Actions"
+5. Your dashboard will be available at: \`https://yourusername.github.io/your-repo\`
+
+### 2. Netlify (Drag & Drop)
+**Super simple for any repository**
+
+1. Go to [netlify.com](https://netlify.com)
+2. Drag and drop this entire folder
+3. Your site will be live instantly!
+4. You'll get a URL like: \`https://random-name.netlify.app\`
+
+### 3. Vercel
+**Great for modern deployments**
+
+1. Go to [vercel.com](https://vercel.com)
+2. Import your repository
+3. Set build output directory to: \`${this.outputDir}\`
+4. Deploy!
+
+### 4. Any Static Host
+**Works with any static hosting service**
+
+1. Upload all files in this folder to your hosting service
+2. Ensure \`index.html\` is in the root directory
+3. Your dashboard will be live!
+
+## 🔗 Preview Your Dashboard
+
+To preview your dashboard locally:
+1. Open \`index.html\` in your web browser
+2. Or use a local server: \`python -m http.server 8000\` (Python 3)
+3. Or use: \`npx serve .\` (Node.js)
+
+## 📊 Dashboard Features
+
+Your dashboard includes:
+- 📈 Interactive vulnerability charts
+- 🔍 Advanced filtering and search
+- 📱 Mobile-responsive design
+- 📤 CSV export functionality
+- 🎨 Beautiful dark theme
+
+## 🆘 Need Help?
+
+If you encounter any issues:
+1. Check that all files are uploaded correctly
+2. Ensure \`parse-sboms.json\` is in the same directory as \`index.html\`
+3. Check browser console for any errors
+
+Happy vulnerability hunting! 🛡️`;
   }
 
 }

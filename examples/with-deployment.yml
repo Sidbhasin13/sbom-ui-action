@@ -1,0 +1,84 @@
+name: SBOM Dashboard with Deployment Options
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  generate-dashboard:
+    runs-on: ubuntu-latest
+    outputs:
+      dashboard-path: ${{ steps.generate.outputs.output-path }}
+      preview-url: ${{ steps.generate.outputs.preview-url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate SBOM Dashboard
+        id: generate
+        uses: sidbhasin13/sbom-ui-action@v1
+        with:
+          sbom-files: '**/*.json,**/*.xml,**/*.yaml'
+          output-dir: 'sbom-dashboard'
+          title: 'My Project Security Dashboard'
+          theme: 'dark'
+      
+      - name: Upload Dashboard Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-dashboard
+          path: ${{ steps.generate.outputs.output-path }}/
+          retention-days: 30
+      
+      - name: Show Preview Instructions
+        run: |
+          echo "🎉 SBOM Dashboard generated successfully!"
+          echo "📁 Dashboard location: ${{ steps.generate.outputs.output-path }}"
+          echo "🔗 Preview URL: ${{ steps.generate.outputs.preview-url }}"
+          echo ""
+          echo "📋 Deployment options available:"
+          echo "1. GitHub Pages - Check the generated workflow file"
+          echo "2. Netlify - Drag & drop the artifact"
+          echo "3. Vercel - Import repository and set build directory"
+          echo "4. Any static host - Upload the files"
+          echo ""
+          echo "📖 See DEPLOYMENT.md in the output folder for detailed instructions"
+
+  deploy-to-github-pages:
+    needs: generate-dashboard
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Download Dashboard Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: sbom-dashboard
+          path: ./sbom-dashboard
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './sbom-dashboard'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      
+      - name: Show Live URL
+        run: |
+          echo "🚀 Dashboard deployed to GitHub Pages!"
+          echo "🌐 Live URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "📊 Your SBOM dashboard is now live and accessible to anyone!"

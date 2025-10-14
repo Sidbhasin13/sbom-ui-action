@@ -24,6 +24,8 @@ inputs:
 outputs:
   output-path:
     description: 'Path where the SBOM UI files were generated'
+  preview-url:
+    description: 'Local file URL to preview the dashboard (file://)'
 runs:
   using: 'node20'
-  main: 'dist/index.js'
+  main: 'index.js'

@@ -1,4 +1,4 @@
-name: Basic SBOM Dashboard
+name: Flexible SBOM Dashboard
 on:
   push:
     branches: [ main ]
@@ -11,16 +11,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Use existing SBOM files
-        run: |
-          # This example assumes you already have SBOM files in your repository
-          # The action will find and parse existing SBOM files
-          echo "Looking for existing SBOM files..."
-          find . -name "*.cyclonedx.json" -o -name "*.spdx.json" -o -name "*.bom.json" | head -10
-      
-      - name: Generate SBOM Dashboard
+      - name: Generate SBOM Dashboard (Flexible)
         uses: sidbhasin13/sbom-ui-action@v1
         with:
-          sbom-files: '**/*.cyclonedx.json,**/*.spdx.json'
+          # The action will automatically find SBOM files anywhere in your repository
+          # No need to specify exact paths or create artifacts.json files
+          sbom-files: '**/*.json,**/*.xml,**/*.yaml,**/*.yml'
           output-dir: 'sbom-dashboard'
           title: 'My Project SBOM Dashboard'
+          theme: 'dark'
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./sbom-dashboard

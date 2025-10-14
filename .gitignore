@@ -5,7 +5,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build outputs
-# dist/ - needed for GitHub Actions
 build/
 *.tgz
 
@@ -82,7 +81,6 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -101,9 +99,12 @@ test-results/
 playwright-report/
 playwright/.cache/
 
-# SBOM test files
+# SBOM test files and outputs
 test-sboms/
 sample-data/
+*-dashboard/
+demo-*/
+test-*/
 
-# Remove dist from gitignore since it's needed for GitHub Actions
-dist
+# Build outputs (not needed since action runs from source)
+dist/
