@@ -60,6 +60,25 @@ python3 -m http.server 8000
 
 This will start a local web server and open your dashboard at `http://localhost:8000` with full functionality!
 
+## Version Strategy
+
+### Using Version Tags
+- **`@v1`** - Latest v1.x.x (recommended for most users)
+- **`@v1.0.1`** - Specific version (for production stability)
+- **`@main`** - Latest development (not recommended)
+
+### Examples:
+```yaml
+# Recommended: Get latest v1.x.x automatically
+uses: sidbhasin13/sbom-ui-action@v1
+
+# Specific version: Pin to exact version
+uses: sidbhasin13/sbom-ui-action@v1.0.1
+
+# Development: Latest from main branch (not recommended)
+uses: sidbhasin13/sbom-ui-action@main
+```
+
 ## Quick Start
 
 ### Super Simple - Just Works!
@@ -78,7 +97,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Generate SBOM UI
-        uses: sidbhasin13/sbom-ui-action@v1
+        uses: sidbhasin13/sbom-ui-action@v1  # ← Use @v1 for latest v1.x.x
         # That's it! The action will find all SBOM files automatically
 ```
 
