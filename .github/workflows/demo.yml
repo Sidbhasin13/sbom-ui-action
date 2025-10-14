@@ -25,7 +25,7 @@ jobs:
           # Add a prominent demo notice to the HTML
           cat > demo-dashboard/demo-notice.html << 'EOF'
           <div style="position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); color: white; padding: 15px; text-align: center; z-index: 1000; font-family: Arial, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
-            <strong>🎯 DEMO PREVIEW:</strong> This shows sample data for demonstration purposes. Your actual SBOM data will be safe and private when you use this action in your own repository.
+            <strong>DEMO PREVIEW:</strong> This shows sample data for demonstration purposes. Your actual SBOM data will be safe and private when you use this action in your own repository.
           </div>
           <script>
             // Add some padding to body to account for the notice
@@ -35,17 +35,17 @@ jobs:
           
           # Create a comprehensive preview guide
           cat > demo-dashboard/PREVIEW-GUIDE.md << 'EOF'
-          # 🎯 SBOM UI Action - Live Demo Preview
+          # SBOM UI Action - Live Demo Preview
           
-          ## 📋 What You're Seeing
+          ## What You're Seeing
           This is a **preview** of how your SBOM dashboard will look when you use the `sidbhasin13/sbom-ui-action` in your own repository.
           
-          ## 🔒 Data Safety
-          - ✅ **This is SAMPLE DATA** - No real vulnerabilities or sensitive information
-          - ✅ **Your actual SBOM data stays private** in your repository
-          - ✅ **No data is shared** with external services
+          ## Data Safety
+          - **This is SAMPLE DATA** - No real vulnerabilities or sensitive information
+          - **Your actual SBOM data stays private** in your repository
+          - **No data is shared** with external services
           
-          ## 🚀 How to Use in Your Repository
+          ## How to Use in Your Repository
           
           ### 1. Add to Your Workflow
           ```yaml
@@ -68,9 +68,9 @@ jobs:
           
           ### 2. Deploy Options
           The action generates everything you need for deployment:
-          - 📁 **Static files** ready for any hosting platform
-          - 📋 **GitHub Pages workflow** (if you want to use GitHub Pages)
-          - 📖 **Deployment instructions** for other platforms
+          - **Static files** ready for any hosting platform
+          - **GitHub Pages workflow** (if you want to use GitHub Pages)
+          - **Deployment instructions** for other platforms
           
           ### 3. Supported Platforms
           - GitHub Pages
@@ -78,14 +78,14 @@ jobs:
           - Vercel
           - Any static hosting service
           
-          ## 🎨 Features You'll Get
-          - 📊 Interactive vulnerability dashboard
-          - 🔍 Search and filter capabilities
-          - 📈 CVSS score distribution charts
-          - 🏷️ Component and license tracking
-          - 📱 Responsive design for all devices
+          ## Features You'll Get
+          - Interactive vulnerability dashboard
+          - Search and filter capabilities
+          - CVSS score distribution charts
+          - Component and license tracking
+          - Responsive design for all devices
           
-          ## 📞 Need Help?
+          ## Need Help?
           Check the generated `DEPLOYMENT.md` file in your output directory for detailed instructions.
           EOF
           
@@ -110,28 +110,28 @@ jobs:
           <body>
               <div class="container">
                   <div class="header">
-                      <h1>🎯 SBOM UI Action - Live Preview</h1>
+                      <h1>SBOM UI Action - Live Preview</h1>
                       <p>See how your SBOM dashboard will look with this interactive demo</p>
                   </div>
                   
                   <div class="demo-notice">
-                      <strong>🔒 Safe Demo:</strong> This shows sample data only. Your actual SBOM data remains private in your repository.
+                      <strong>Safe Demo:</strong> This shows sample data only. Your actual SBOM data remains private in your repository.
                   </div>
                   
                   <div class="feature">
-                      <h3>📊 Interactive Dashboard</h3>
+                      <h3>Interactive Dashboard</h3>
                       <p>View the full interactive dashboard with sample vulnerability data</p>
                       <a href="index.html" class="btn">View Dashboard</a>
                   </div>
                   
                   <div class="feature">
-                      <h3>📋 Deployment Guide</h3>
+                      <h3>Deployment Guide</h3>
                       <p>Learn how to deploy this to your own hosting platform</p>
                       <a href="DEPLOYMENT.md" class="btn">View Instructions</a>
                   </div>
                   
                   <div class="feature">
-                      <h3>📖 Preview Guide</h3>
+                      <h3>Preview Guide</h3>
                       <p>Detailed information about features and usage</p>
                       <a href="PREVIEW-GUIDE.md" class="btn">Read Guide</a>
                   </div>
@@ -153,14 +153,14 @@ jobs:
 
       - name: Show preview info
         run: |
-          echo "🎯 Demo preview generated successfully!"
-          echo "📁 Files created:"
+          echo "Demo preview generated successfully!"
+          echo "Files created:"
           ls -la demo-dashboard/
           echo ""
-          echo "📋 Preview files:"
+          echo "Preview files:"
           echo "  - preview.html (main preview page)"
           echo "  - index.html (interactive dashboard)"
           echo "  - PREVIEW-GUIDE.md (usage instructions)"
           echo "  - DEPLOYMENT.md (deployment options)"
           echo ""
-          echo "✅ Users can download the artifact to see the preview!"
+          echo "Users can download the artifact to see the preview!"

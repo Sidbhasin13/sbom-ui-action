@@ -508,7 +508,16 @@ class SBOMUIGenerator {
   }
 
   async generateHTML() {
-    const htmlContent = this.getHTMLTemplate();
+    let htmlContent = this.getHTMLTemplate();
+    
+    // Embed the JSON data directly in the HTML for local viewing
+    const jsonFile = path.join(this.outputDir, 'parse-sboms.json');
+    if (fs.existsSync(jsonFile)) {
+      const jsonData = fs.readFileSync(jsonFile, 'utf8');
+      const embeddedScript = `<script>window.EMBEDDED_SBOM_DATA = ${jsonData};</script>`;
+      htmlContent = htmlContent.replace('</head>', embeddedScript + '\n</head>');
+    }
+    
     const outputFile = path.join(this.outputDir, 'index.html');
     fs.writeFileSync(outputFile, htmlContent);
     core.info(`HTML UI generated at ${outputFile}`);
@@ -832,7 +841,7 @@ class SBOMUIGenerator {
       <div x-show="metaText.includes('DEMO')" class="absolute top-16 left-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg shadow-lg z-50" style="display: none;">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
-            <span class="text-lg">🔒</span>
+            <span class="text-lg">LOCK</span>
             <div>
               <div class="font-semibold">Demo Mode - Sample Data</div>
               <div class="text-sm opacity-90">Your actual SBOM data will be safe and private when you use this action in your repository</div>
@@ -1620,12 +1629,20 @@ class SBOMUIGenerator {
           this.selIdx = -1;
           
           try {
-            const response = await fetch("./parse-sboms.json?_=" + Date.now());
-            if (!response.ok) {
-              throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+            // Try to load embedded data first (for local viewing)
+            let snap;
+            if (window.EMBEDDED_SBOM_DATA) {
+              snap = window.EMBEDDED_SBOM_DATA;
+              console.log('Loaded embedded data:', snap);
+            } else {
+              // Fallback to fetch for hosted versions
+              const response = await fetch("./parse-sboms.json?_=" + Date.now());
+              if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+              }
+              snap = await response.json();
+              console.log('Loaded data:', snap);
             }
-            const snap = await response.json();
-            console.log('Loaded data:', snap);
             
             // Process items with proper _key generation
             this.items = (snap.items || []).map((r, idx) => ({ 
@@ -1667,7 +1684,7 @@ class SBOMUIGenerator {
             console.error('Failed to load SBOM data:', error);
             // Create fallback sample data
             this.createFallbackData();
-            this.metaText = '🔒 DEMO: Sample data - Your actual SBOM data stays private';
+            this.metaText = 'DEMO: Sample data - Your actual SBOM data stays private';
           }
 
           this.restoreFromHash();
