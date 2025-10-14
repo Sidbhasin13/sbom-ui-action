@@ -195,6 +195,7 @@ class SBOMUIGenerator {
       try {
         const content = fs.readFileSync(file, 'utf8');
         const datasetId = this.extractDatasetId(file);
+        core.info(`Processing file: ${file} -> dataset: ${datasetId}`);
         const parsed = await this.parseSBOM(content, file, datasetId);
         
         if (parsed && parsed.items && parsed.items.length > 0) {
@@ -237,19 +238,45 @@ class SBOMUIGenerator {
     const parts = relativePath.split(path.sep);
     const fileName = path.basename(filePath, path.extname(filePath));
     
-    // Strategy 1: Look for meaningful directory names in the path
+    // Strategy 1: Extract from filename first (most reliable for Trivy outputs)
+    const fileNameLower = fileName.toLowerCase();
+    
+    // Handle Trivy SBOM naming patterns: sbom-{image_name}.cyclonedx.json
+    if (fileNameLower.startsWith('sbom-')) {
+      const imageName = fileNameLower.replace('sbom-', '').replace('.cyclonedx.json', '');
+      
+      // Clean up the image name to get meaningful dataset names
+      if (imageName.includes('stable')) return 'stable';
+      if (imageName.includes('arm64')) return 'arm64';
+      if (imageName.includes('amd64')) {
+        if (imageName.includes('backend')) return 'backend-amd64';
+        if (imageName.includes('frontend')) return 'frontend-amd64';
+        return 'amd64';
+      }
+      if (imageName.includes('backend')) return 'backend';
+      if (imageName.includes('frontend')) return 'frontend';
+      
+      // Return cleaned image name
+      return imageName.replace(/[^a-zA-Z0-9-_]/g, '-');
+    }
+    
+    // Strategy 2: Look for meaningful directory names in the path
     for (let i = 0; i < parts.length - 1; i++) {
       const dirName = parts[i].toLowerCase();
       
       // Skip common non-meaningful directories
-      if (['src', 'lib', 'bin', 'etc', 'var', 'tmp', 'temp'].includes(dirName)) {
+      if (['src', 'lib', 'bin', 'etc', 'var', 'tmp', 'temp', 'all-artifacts'].includes(dirName)) {
         continue;
       }
       
       // Check for common patterns
       if (dirName.includes('stable') || dirName.includes('prod') || dirName.includes('production')) return 'stable';
       if (dirName.includes('arm64') || dirName.includes('aarch64')) return 'arm64';
-      if (dirName.includes('amd64') || dirName.includes('x86_64')) return 'amd64';
+      if (dirName.includes('amd64') || dirName.includes('x86_64')) {
+        if (dirName.includes('backend')) return 'backend-amd64';
+        if (dirName.includes('frontend')) return 'frontend-amd64';
+        return 'amd64';
+      }
       if (dirName.includes('backend') || dirName.includes('api')) return 'backend';
       if (dirName.includes('frontend') || dirName.includes('web') || dirName.includes('ui')) return 'frontend';
       if (dirName.includes('main') || dirName.includes('master')) return 'main';
@@ -263,19 +290,6 @@ class SBOMUIGenerator {
         return dirName.replace(/[^a-zA-Z0-9-_]/g, '-');
       }
     }
-    
-    // Strategy 2: Extract from filename
-    const fileNameLower = fileName.toLowerCase();
-    if (fileNameLower.includes('stable') || fileNameLower.includes('prod')) return 'stable';
-    if (fileNameLower.includes('arm64') || fileNameLower.includes('aarch64')) return 'arm64';
-    if (fileNameLower.includes('amd64') || fileNameLower.includes('x86_64')) return 'amd64';
-    if (fileNameLower.includes('backend') || fileNameLower.includes('api')) return 'backend';
-    if (fileNameLower.includes('frontend') || fileNameLower.includes('web')) return 'frontend';
-    if (fileNameLower.includes('main') || fileNameLower.includes('master')) return 'main';
-    if (fileNameLower.includes('develop') || fileNameLower.includes('dev')) return 'develop';
-    if (fileNameLower.includes('release') || fileNameLower.includes('rel')) return 'release';
-    if (fileNameLower.includes('test') || fileNameLower.includes('testing')) return 'test';
-    if (fileNameLower.includes('staging') || fileNameLower.includes('stage')) return 'staging';
     
     // Strategy 3: Use filename if it's not generic
     if (fileName && fileName.length > 2 && !fileName.match(/^(sbom|bom|cyclonedx|spdx)$/i)) {
@@ -303,6 +317,64 @@ class SBOMUIGenerator {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36).substring(0, 6);
+  }
+
+  extractFixedVersions(vulnerability) {
+    // Check multiple sources for fix information
+    const sources = [
+      vulnerability.analysis?.response,
+      vulnerability.analysis?.justification,
+      vulnerability.analysis?.state,
+      vulnerability.analysis?.detail,
+      vulnerability.analysis?.workaround,
+      vulnerability.recommendation,
+      vulnerability.solution
+    ];
+
+    // Look for fix indicators in various fields
+    for (const source of sources) {
+      if (Array.isArray(source)) {
+        for (const item of source) {
+          if (typeof item === 'string' && this.hasFixIndicators(item)) {
+            return ['*']; // Generic fix available
+          }
+        }
+      } else if (typeof source === 'string' && this.hasFixIndicators(source)) {
+        return ['*']; // Generic fix available
+      }
+    }
+
+    // Check for specific version information
+    if (vulnerability.analysis?.fixedIn) {
+      return Array.isArray(vulnerability.analysis.fixedIn) 
+        ? vulnerability.analysis.fixedIn 
+        : [vulnerability.analysis.fixedIn];
+    }
+
+    // Check for remediation information
+    if (vulnerability.remediation) {
+      if (vulnerability.remediation.versions) {
+        return Array.isArray(vulnerability.remediation.versions)
+          ? vulnerability.remediation.versions
+          : [vulnerability.remediation.versions];
+      }
+      if (vulnerability.remediation.workaround) {
+        return ['*']; // Workaround available
+      }
+    }
+
+    return [];
+  }
+
+  hasFixIndicators(text) {
+    if (!text) return false;
+    const lowerText = text.toLowerCase();
+    const fixIndicators = [
+      'update', 'upgrade', 'patch', 'fix', 'fixed', 'resolved', 'remediation',
+      'workaround', 'mitigation', 'solution', 'corrected', 'addressed',
+      'version', 'latest', 'newer', 'current'
+    ];
+    return fixIndicators.some(indicator => lowerText.includes(indicator));
   }
 
   async parseSBOM(content, filePath, datasetId) {
@@ -359,7 +431,7 @@ class SBOMUIGenerator {
           direct: (c.scope || '').toLowerCase() !== 'optional' && (c.scope || '').toLowerCase() !== 'transitive',
           cwes: (v.cwes || []).map(x => x.id || x).filter(Boolean),
           urls: (v.references || []).map(r => r.url).filter(Boolean),
-          fixedVersions: (v.analysis?.response || []).includes('update') ? ['*'] : []
+          fixedVersions: this.extractFixedVersions(v)
         });
       }
     }
@@ -853,24 +925,6 @@ class SBOMUIGenerator {
         </div>
       </div>
       
-      <div class="hidden sm:flex items-center gap-2 ml-4">
-        <span class="text-xs text-[#94a3b8]">Sort:</span>
-        <select x-model="sortKey" @change="applyFilters(true)" 
-          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0]">
-          <option value="severityRank">Severity</option>
-          <option value="cvss">CVSS</option>
-          <option value="component">Component</option>
-          <option value="dataset">Dataset</option>
-        </select>
-        <button @click="toggleSortDir(); applyFilters(true)" 
-          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
-          <span x-text="sortDir === 'desc' ? '↓' : '↑'"></span>
-        </button>
-        <button @click="resetFilters()" 
-          class="px-2 py-1 text-xs border border-[#2d3748] rounded bg-[#1a1f2e] text-[#e2e8f0] hover:bg-[#A1D6E2] hover:text-[#0a0e14]">
-          Reset
-        </button>
-      </div>
 
       <div class="ml-auto flex items-center gap-1 sm:gap-2">
         <button
