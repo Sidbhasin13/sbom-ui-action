@@ -29,14 +29,14 @@ class SBOMUIGenerator {
   async run() {
     try {
       core.info('Starting SBOM UI Generation...');
-
+      
       // Create output directory
       await this.createOutputDir();
-
+      
       // Find and process SBOM files
       const sbomFiles = await this.findSBOMFiles();
       core.info(`Found ${sbomFiles.length} SBOM files`);
-
+      
       if (sbomFiles.length === 0) {
         core.warning('No SBOM files found. Creating example with sample data.');
         await this.createSampleData();
@@ -45,19 +45,19 @@ class SBOMUIGenerator {
         const parsedData = await this.parseSBOMFiles(sbomFiles);
         await this.writeParsedData(parsedData);
       }
-
+      
       // Generate HTML UI
       await this.generateHTML();
-
+      
       // Copy static assets
       await this.copyStaticAssets();
-
+      
       // Set output
       core.setOutput('output-path', this.outputDir);
       core.info(`SBOM UI generated in: ${this.outputDir}`);
 
       core.info('SBOM UI generation completed successfully!');
-
+      
     } catch (error) {
       core.setFailed(`Error: ${error.message}`);
     }
@@ -359,9 +359,21 @@ class SBOMUIGenerator {
   <meta name="color-scheme" content="light dark" />
     <script src="https://cdn.tailwindcss.com/3.4.0"></script>
     <script>
-      // Suppress Tailwind CDN warning
-      if (typeof window !== 'undefined' && window.tailwind) {
-        console.log('Tailwind CSS loaded successfully');
+      // Configure Tailwind for production use
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#7395AE',
+              accent: '#A1D6E2',
+              bg: '#0a0e14',
+              surface: '#1a1f2e',
+              border: '#2d3748',
+              text: '#e2e8f0',
+              'text-muted': '#94a3b8'
+            }
+          }
+        }
       }
     </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -705,7 +717,7 @@ class SBOMUIGenerator {
             <div x-ref="suggest" x-show="showSuggest && suggestions.length" @pointerdown.prevent
               class="absolute z-50 mt-1 w-full bg-[#1a1f2e] border border-[#2d3748] rounded-xl shadow-lg max-h-72 overflow-auto"
               role="listbox">
-              <template x-for="(s, i) in suggestions" :key="s.key">
+              <template x-for="(s, i) in suggestions" :key="'suggest-' + i + '-' + s.key">
                 <button type="button" @pointerdown.prevent @click="pick(s)"
                   :class="['w-full text-left px-3 py-2 flex items-center gap-2', i===selIdx ? 'bg-[#2d3748]' : 'hover:bg-[#2d3748]']"
                   :aria-selected="i===selIdx" role="option" style="min-height:44px">
@@ -722,7 +734,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in (datasets || [])" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -777,7 +789,7 @@ class SBOMUIGenerator {
             <div x-ref="suggest" x-show="showSuggest && suggestions.length" @pointerdown.prevent
               class="absolute z-50 mt-1 w-full bg-[#1a1f2e] border border-[#2d3748] rounded-xl shadow-lg max-h-72 overflow-auto"
               role="listbox">
-              <template x-for="(s, i) in suggestions" :key="s.key">
+              <template x-for="(s, i) in suggestions" :key="'suggest-' + i + '-' + s.key">
                 <button type="button" @pointerdown.prevent @click="pick(s)"
                   :class="['w-full text-left px-3 py-2 flex items-center gap-2', i===selIdx ? 'bg-[#2d3748]' : 'hover:bg-[#2d3748]']"
                   :aria-selected="i===selIdx" role="option" style="min-height:44px">
@@ -794,7 +806,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="d in (datasets || [])" :key="d._key">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -853,11 +865,11 @@ class SBOMUIGenerator {
 
         <div class="card xl:col-span-4">
           <div class="text-sm font-medium mb-3">Datasets in view</div>
-          <template x-if="Object.keys(perDatasetSev).length === 0">
+          <template x-if="Object.keys(perDatasetSevSafe).length === 0">
             <div class="muted">No datasets in the current view.</div>
           </template>
           <div class="space-y-3 max-h-60 overflow-auto">
-            <template x-for="(v, name) in perDatasetSev" :key="'ds-'+name">
+            <template x-for="(v, name) in perDatasetSevSafe" :key="'ds-'+name+'-'+v.total">
               <div>
                 <div class="flex items-center justify-between text-sm">
                   <div class="font-medium truncate" x-text="name"></div>
@@ -929,7 +941,7 @@ class SBOMUIGenerator {
             <div>
               <div class="text-sm font-medium mb-2">Severity mix</div>
               <div class="text-xs space-y-1">
-                <template x-for="seg in donutLegend" :key="'leg-'+seg.label">
+                <template x-for="(seg, idx) in donutLegendSafe" :key="'leg-'+idx+'-'+seg.label">
                   <div class="flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded" :style="\`background:\${seg.color}\`"></span>
                     <span class="text-[#94a3b8]" x-text="\`\${seg.label}: \${seg.count}\`"></span>
@@ -943,7 +955,7 @@ class SBOMUIGenerator {
           <div class="card h-full">
             <div class="text-sm font-medium mb-2">Top components by vulnerabilities</div>
             <div class="space-y-2">
-              <template x-for="row in topComponents" :key="'tc-'+row.name">
+              <template x-for="(row, idx) in topComponentsSafe" :key="'tc-'+idx+'-'+row.name">
                 <div class="flex items-center gap-3">
                   <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                   <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -965,7 +977,7 @@ class SBOMUIGenerator {
             <div class="muted">No CVE IDs found.</div>
           </template>
           <ul class="text-sm grid grid-cols-1 gap-3 max-h-80 overflow-auto">
-            <template x-for="cve in (metrics.topCVEs || [])" :key="'cve-'+cve.id">
+            <template x-for="(cve, idx) in (metrics.topCVEs || [])" :key="'cve-'+idx+'-'+cve.id">
               <li class="border rounded-xl p-3">
                 <div class="font-medium">
                   <button class="text-blue-600 underline" @click="applyTopCVE(cve.id)" x-text="cve.id"></button>
@@ -974,7 +986,7 @@ class SBOMUIGenerator {
                   <span x-text="\`Count: \${cve.count}\`"></span>
                   · <span x-text="\`Max CVSS: \${cve.maxCVSS ?? '-'}\`"></span>
                   <template x-if="(cve.datasets||[]).length">· <span
-                      x-text="\`Datasets: \${cve.datasets.join(', ')}\`"></span></template>
+                      x-text="\`Datasets: \${(cve.datasets||[]).join(', ')}\`"></span></template>
                 </div>
               </li>
             </template>
@@ -996,7 +1008,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Top licenses by vulnerabilities</div>
           <div class="space-y-2">
-            <template x-for="row in topLicenses" :key="'tl-'+row.name">
+            <template x-for="(row, idx) in topLicensesSafe" :key="'tl-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1014,7 +1026,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Fix availability by dataset</div>
           <div class="space-y-2">
-            <template x-for="row in dsFixRates" :key="'dsfr-'+row.name">
+            <template x-for="(row, idx) in dsFixRatesSafe" :key="'dsfr-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-32 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1124,6 +1136,12 @@ class SBOMUIGenerator {
         filtered: [],
         paged: [],
         datasets: [],
+        get datasetsSafe() {
+          if (!Array.isArray(this.datasets)) {
+            return [];
+          }
+          return this.datasets.filter(d => d && d._key && d.id);
+        },
         overall: { total: 0, severityCounts: {} },
         metrics: { fixAvailabilityRate: 0, topCVEs: [] },
         dataset: "",
@@ -1139,6 +1157,9 @@ class SBOMUIGenerator {
         fixRateFiltered: 0,
         filterSummary: "",
         perDatasetSev: {},
+        get perDatasetSevSafe() {
+          return this.perDatasetSev && typeof this.perDatasetSev === 'object' ? this.perDatasetSev : {};
+        },
         sortKey: "severityRank",
         sortDir: "desc",
         page: 0,
@@ -1229,6 +1250,9 @@ class SBOMUIGenerator {
           UNKNOWN: { dash: '0 1000', offset: 0, color: '#d1d5db', count: 0 },
         },
         donutLegend: [],
+        get donutLegendSafe() {
+          return Array.isArray(this.donutLegend) ? this.donutLegend : [];
+        },
         buildSeverityDonut() {
           const order = this.sevBaseOrder;
           const counts = this.sevCountsFiltered || {};
@@ -1279,6 +1303,9 @@ class SBOMUIGenerator {
         },
 
         topComponents: [],
+        get topComponentsSafe() {
+          return Array.isArray(this.topComponents) ? this.topComponents : [];
+        },
         buildTopComponents() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1293,6 +1320,9 @@ class SBOMUIGenerator {
         },
 
         topLicenses: [],
+        get topLicensesSafe() {
+          return Array.isArray(this.topLicenses) ? this.topLicenses : [];
+        },
         buildTopLicenses() {
           const counts = {};
           for (const r of this.filtered) {
@@ -1311,6 +1341,9 @@ class SBOMUIGenerator {
         },
 
         dsFixRates: [],
+        get dsFixRatesSafe() {
+          return Array.isArray(this.dsFixRates) ? this.dsFixRates : [];
+        },
         buildDsFixRates() {
           const map = {};
           if (!Array.isArray(this.filtered)) {
@@ -1361,6 +1394,18 @@ class SBOMUIGenerator {
         },
 
         async init() {
+          // Initialize with empty data first to prevent Alpine.js errors
+          this.items = [];
+          this.datasets = [];
+          this.filtered = [];
+          this.paged = [];
+          this.overall = { total: 0, severityCounts: {} };
+          this.metrics = { fixAvailabilityRate: 0, topCVEs: [] };
+          this.metaText = 'Loading...';
+          this.suggestions = [];
+          this.showSuggest = false;
+          this.selIdx = -1;
+          
           try {
             const snap = await fetch("./parse-sboms.json?_=" + Date.now()).then(r => r.json());
             this.items = (snap.items || []).map((r, idx) => ({ ...r, _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx }));
@@ -1371,17 +1416,14 @@ class SBOMUIGenerator {
                 id: d.id || 'dataset-' + i,
                 vulnerabilities: d.vulnerabilities || 0
               }))
+              .filter(d => d && d._key) // Ensure all items have _key
               .sort((a, b) => String(a.id).localeCompare(String(b.id)));
             this.overall = snap.overall || this.overall;
             this.metrics = snap.metrics || this.metrics;
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
           } catch (error) {
             console.error('Failed to load SBOM data:', error);
-            // Initialize with empty data to prevent Alpine.js errors
-            this.items = [];
-            this.datasets = [];
-            this.overall = { total: 0, severityCounts: {} };
-            this.metrics = { fixAvailabilityRate: 0, topCVEs: [] };
+            // Keep the empty data initialization
             this.metaText = 'Failed to load data';
           }
 

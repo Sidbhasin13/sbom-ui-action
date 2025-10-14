@@ -353,9 +353,21 @@ class SBOMUIGenerator {
   <meta name="color-scheme" content="light dark" />
     <script src="https://cdn.tailwindcss.com/3.4.0"></script>
     <script>
-      // Suppress Tailwind CDN warning
-      if (typeof window !== 'undefined' && window.tailwind) {
-        console.log('Tailwind CSS loaded successfully');
+      // Configure Tailwind for production use
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#7395AE',
+              accent: '#A1D6E2',
+              bg: '#0a0e14',
+              surface: '#1a1f2e',
+              border: '#2d3748',
+              text: '#e2e8f0',
+              'text-muted': '#94a3b8'
+            }
+          }
+        }
       }
     </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -699,7 +711,7 @@ class SBOMUIGenerator {
             <div x-ref="suggest" x-show="showSuggest && suggestions.length" @pointerdown.prevent
               class="absolute z-50 mt-1 w-full bg-[#1a1f2e] border border-[#2d3748] rounded-xl shadow-lg max-h-72 overflow-auto"
               role="listbox">
-              <template x-for="(s, i) in suggestions" :key="s.key">
+              <template x-for="(s, i) in suggestions" :key="'suggest-' + i + '-' + s.key">
                 <button type="button" @pointerdown.prevent @click="pick(s)"
                   :class="['w-full text-left px-3 py-2 flex items-center gap-2', i===selIdx ? 'bg-[#2d3748]' : 'hover:bg-[#2d3748]']"
                   :aria-selected="i===selIdx" role="option" style="min-height:44px">
@@ -716,7 +728,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -771,7 +783,7 @@ class SBOMUIGenerator {
             <div x-ref="suggest" x-show="showSuggest && suggestions.length" @pointerdown.prevent
               class="absolute z-50 mt-1 w-full bg-[#1a1f2e] border border-[#2d3748] rounded-xl shadow-lg max-h-72 overflow-auto"
               role="listbox">
-              <template x-for="(s, i) in suggestions" :key="s.key">
+              <template x-for="(s, i) in suggestions" :key="'suggest-' + i + '-' + s.key">
                 <button type="button" @pointerdown.prevent @click="pick(s)"
                   :class="['w-full text-left px-3 py-2 flex items-center gap-2', i===selIdx ? 'bg-[#2d3748]' : 'hover:bg-[#2d3748]']"
                   :aria-selected="i===selIdx" role="option" style="min-height:44px">
@@ -788,7 +800,7 @@ class SBOMUIGenerator {
             <select x-model="dataset"
               class="mt-1 w-full px-3 py-2 border border-[#2d3748] rounded-xl bg-[#1a1f2e] text-[#e2e8f0]">
               <option value="">All datasets</option>
-              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx">
+              <template x-for="(d, idx) in datasetsSafe" :key="'ds-select-' + idx + '-' + (d.id || 'unknown')">
                 <option :value="d.id" x-text="\`\${d.id} (\${d.vulnerabilities})\`"></option>
               </template>
             </select>
@@ -851,7 +863,7 @@ class SBOMUIGenerator {
             <div class="muted">No datasets in the current view.</div>
           </template>
           <div class="space-y-3 max-h-60 overflow-auto">
-            <template x-for="(v, name) in perDatasetSevSafe" :key="'ds-'+name">
+            <template x-for="(v, name) in perDatasetSevSafe" :key="'ds-'+name+'-'+v.total">
               <div>
                 <div class="flex items-center justify-between text-sm">
                   <div class="font-medium truncate" x-text="name"></div>
@@ -923,7 +935,7 @@ class SBOMUIGenerator {
             <div>
               <div class="text-sm font-medium mb-2">Severity mix</div>
               <div class="text-xs space-y-1">
-                <template x-for="seg in donutLegendSafe" :key="'leg-'+seg.label">
+                <template x-for="(seg, idx) in donutLegendSafe" :key="'leg-'+idx+'-'+seg.label">
                   <div class="flex items-center gap-2">
                     <span class="inline-block w-3 h-3 rounded" :style="\`background:\${seg.color}\`"></span>
                     <span class="text-[#94a3b8]" x-text="\`\${seg.label}: \${seg.count}\`"></span>
@@ -937,7 +949,7 @@ class SBOMUIGenerator {
           <div class="card h-full">
             <div class="text-sm font-medium mb-2">Top components by vulnerabilities</div>
             <div class="space-y-2">
-              <template x-for="row in topComponentsSafe" :key="'tc-'+row.name">
+              <template x-for="(row, idx) in topComponentsSafe" :key="'tc-'+idx+'-'+row.name">
                 <div class="flex items-center gap-3">
                   <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                   <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -959,7 +971,7 @@ class SBOMUIGenerator {
             <div class="muted">No CVE IDs found.</div>
           </template>
           <ul class="text-sm grid grid-cols-1 gap-3 max-h-80 overflow-auto">
-            <template x-for="cve in (metrics.topCVEs || [])" :key="'cve-'+cve.id">
+            <template x-for="(cve, idx) in (metrics.topCVEs || [])" :key="'cve-'+idx+'-'+cve.id">
               <li class="border rounded-xl p-3">
                 <div class="font-medium">
                   <button class="text-blue-600 underline" @click="applyTopCVE(cve.id)" x-text="cve.id"></button>
@@ -968,7 +980,7 @@ class SBOMUIGenerator {
                   <span x-text="\`Count: \${cve.count}\`"></span>
                   · <span x-text="\`Max CVSS: \${cve.maxCVSS ?? '-'}\`"></span>
                   <template x-if="(cve.datasets||[]).length">· <span
-                      x-text="\`Datasets: \${cve.datasets.join(', ')}\`"></span></template>
+                      x-text="\`Datasets: \${(cve.datasets||[]).join(', ')}\`"></span></template>
                 </div>
               </li>
             </template>
@@ -990,7 +1002,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Top licenses by vulnerabilities</div>
           <div class="space-y-2">
-            <template x-for="row in topLicensesSafe" :key="'tl-'+row.name">
+            <template x-for="(row, idx) in topLicensesSafe" :key="'tl-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-36 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1008,7 +1020,7 @@ class SBOMUIGenerator {
         <div class="card">
           <div class="text-sm font-medium mb-2">Fix availability by dataset</div>
           <div class="space-y-2">
-            <template x-for="row in dsFixRatesSafe" :key="'dsfr-'+row.name">
+            <template x-for="(row, idx) in dsFixRatesSafe" :key="'dsfr-'+idx+'-'+row.name">
               <div class="flex items-center gap-3">
                 <div class="w-32 truncate text-xs text-[#e2e8f0]" :title="row.name" x-text="row.name"></div>
                 <div class="flex-1 h-2 bg-[#2d3748] rounded">
@@ -1119,7 +1131,10 @@ class SBOMUIGenerator {
         paged: [],
         datasets: [],
         get datasetsSafe() {
-          return Array.isArray(this.datasets) ? this.datasets.filter(d => d && d._key) : [];
+          if (!Array.isArray(this.datasets)) {
+            return [];
+          }
+          return this.datasets.filter(d => d && d._key && d.id);
         },
         overall: { total: 0, severityCounts: {} },
         metrics: { fixAvailabilityRate: 0, topCVEs: [] },
@@ -1373,6 +1388,18 @@ class SBOMUIGenerator {
         },
 
         async init() {
+          // Initialize with empty data first to prevent Alpine.js errors
+          this.items = [];
+          this.datasets = [];
+          this.filtered = [];
+          this.paged = [];
+          this.overall = { total: 0, severityCounts: {} };
+          this.metrics = { fixAvailabilityRate: 0, topCVEs: [] };
+          this.metaText = 'Loading...';
+          this.suggestions = [];
+          this.showSuggest = false;
+          this.selIdx = -1;
+          
           try {
             const snap = await fetch("./parse-sboms.json?_=" + Date.now()).then(r => r.json());
             this.items = (snap.items || []).map((r, idx) => ({ ...r, _key: (r.dataset || 'ds') + '::' + (r.id || (r.component || 'comp') + '@' + (r.version || '')) + '::' + idx }));
@@ -1390,17 +1417,8 @@ class SBOMUIGenerator {
             this.metaText = snap.generatedAt ? 'updated ' + new Date(snap.generatedAt).toLocaleString() : '';
           } catch (error) {
             console.error('Failed to load SBOM data:', error);
-            // Initialize with empty data to prevent Alpine.js errors
-            this.items = [];
-            this.datasets = [];
-            this.overall = { total: 0, severityCounts: {} };
-            this.metrics = { fixAvailabilityRate: 0, topCVEs: [] };
+            // Keep the empty data initialization
             this.metaText = 'Failed to load data';
-            
-            // Force update to ensure Alpine.js sees the changes
-            this.$nextTick(() => {
-              this.applyFilters(true);
-            });
           }
 
           this.restoreFromHash();
