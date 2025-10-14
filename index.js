@@ -11,25 +11,61 @@ let core, github, glob, yaml;
 function installDependencies() {
   console.log('📦 Installing missing dependencies...');
   try {
-    execSync('npm install @actions/core@^1.10.0 @actions/github@^6.0.0 glob@^10.3.10 js-yaml@^4.1.0', { stdio: 'inherit' });
+    // Try to install in the current directory first
+    execSync('npm install @actions/core@^1.10.0 @actions/github@^6.0.0 glob@^10.3.10 js-yaml@^4.1.0', { 
+      stdio: 'inherit'
+    });
     console.log('✅ Dependencies installed successfully!');
   } catch (installError) {
-    console.error(`Failed to install dependencies: ${installError.message}`);
-    process.exit(1);
+    console.log('⚠️ Failed to install in current directory, trying script directory...');
+    try {
+      // Get the directory where this script is located
+      const scriptDir = path.dirname(__filename);
+      console.log(`Installing dependencies in: ${scriptDir}`);
+      
+      // Install dependencies in the script's directory
+      execSync('npm install @actions/core@^1.10.0 @actions/github@^6.0.0 glob@^10.3.10 js-yaml@^4.1.0', { 
+        stdio: 'inherit',
+        cwd: scriptDir
+      });
+      console.log('✅ Dependencies installed successfully!');
+    } catch (secondError) {
+      console.error(`Failed to install dependencies: ${secondError.message}`);
+      process.exit(1);
+    }
+  }
+}
+
+// Function to try requiring modules from different locations
+function tryRequire(moduleName) {
+  try {
+    return require(moduleName);
+  } catch (error) {
+    // Try from node_modules in current directory
+    try {
+      return require(path.join(process.cwd(), 'node_modules', moduleName));
+    } catch (error2) {
+      // Try from node_modules in script directory
+      try {
+        return require(path.join(path.dirname(__filename), 'node_modules', moduleName));
+      } catch (error3) {
+        throw error; // Re-throw original error
+      }
+    }
   }
 }
 
 try {
-  core = require('@actions/core');
-  github = require('@actions/github');
-  glob = require('glob');
-  yaml = require('js-yaml');
+  core = tryRequire('@actions/core');
+  github = tryRequire('@actions/github');
+  glob = tryRequire('glob');
+  yaml = tryRequire('js-yaml');
 } catch (error) {
   installDependencies();
-  core = require('@actions/core');
-  github = require('@actions/github');
-  glob = require('glob');
-  yaml = require('js-yaml');
+  core = tryRequire('@actions/core');
+  github = tryRequire('@actions/github');
+  glob = tryRequire('glob');
+  yaml = tryRequire('js-yaml');
 }
 
 class SBOMUIGenerator {
