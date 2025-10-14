@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Generate Demo Dashboard
-        uses: sidbhasin13/sbom-ui-action@v1
+        uses: sidbhasin13/sbom-ui-action@main
         with:
           sbom-files: 'nonexistent-pattern-*.json'  # This will trigger sample data generation
           output-dir: 'demo-dashboard'

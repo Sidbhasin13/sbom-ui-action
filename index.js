@@ -1,37 +1,35 @@
 #!/usr/bin/env node
 
-const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
 // Handle dependencies dynamically
-let glob, yaml;
-try {
-  glob = require('glob');
-} catch (error) {
-  core.info('📦 Installing missing dependencies...');
+let core, github, glob, yaml;
+
+// Install all dependencies if any are missing
+function installDependencies() {
+  console.log('📦 Installing missing dependencies...');
   try {
-    execSync('npm install glob@^10.3.10', { stdio: 'inherit' });
-    glob = require('glob');
-    core.info('✅ Dependencies installed successfully!');
+    execSync('npm install @actions/core@^1.10.0 @actions/github@^6.0.0 glob@^10.3.10 js-yaml@^4.1.0', { stdio: 'inherit' });
+    console.log('✅ Dependencies installed successfully!');
   } catch (installError) {
-    core.setFailed(`Failed to install dependencies: ${installError.message}`);
+    console.error(`Failed to install dependencies: ${installError.message}`);
     process.exit(1);
   }
 }
 
 try {
+  core = require('@actions/core');
+  github = require('@actions/github');
+  glob = require('glob');
   yaml = require('js-yaml');
 } catch (error) {
-  core.info('📦 Installing js-yaml...');
-  try {
-    execSync('npm install js-yaml@^4.1.0', { stdio: 'inherit' });
-    yaml = require('js-yaml');
-  } catch (installError) {
-    core.warning(`Failed to install js-yaml: ${installError.message}`);
-    yaml = null;
-  }
+  installDependencies();
+  core = require('@actions/core');
+  github = require('@actions/github');
+  glob = require('glob');
+  yaml = require('js-yaml');
 }
 
 class SBOMUIGenerator {
