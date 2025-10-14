@@ -1,5 +1,6 @@
 name: Generate Demo Preview
 
+# Trigger workflow on push to main or manual dispatch
 on:
   push:
     branches: [ main ]
@@ -85,7 +86,7 @@ jobs:
           - Component and license tracking
           - Responsive design for all devices
           
-          ## Need Help?
+          ## Need Help ?
           Check the generated `DEPLOYMENT.md` file in your output directory for detailed instructions.
           EOF
           
